@@ -59,6 +59,14 @@ audio/music/                    - 3 MP3 music tracks (electronic/techno, CC0)
 - **Bonus names**: "Светльо", "Боян", "Пешко", "Цвети", "Дари" spawn every 8-15s with siren, spinning/bouncing animation, tap for bonus points.
 - **Retina/HiDPI**: `resolution: window.devicePixelRatio` in Phaser config for sharp rendering.
 
+## Code Quality Rules
+
+- **Keep files small. Refactor early, not late.** No file should exceed ~300 lines. When a file approaches that limit, proactively split it into focused modules before adding more code. Splitting a 300-line file is easy; splitting a 1400-line file is painful.
+- **One responsibility per file.** Each module should do one thing (e.g., textures, explosions, input handling). If you're adding a new feature that doesn't fit an existing file's purpose, create a new file.
+- **Use barrel re-exports** (`index.js`) when splitting a module into a directory, so consumers only need one import path.
+- **Extract self-contained subsystems** (like bonus names, power-ups, achievements) into `js/managers/` as standalone modules that take `scene` as a parameter.
+- **When adding new effects**, add them to the appropriate file in `js/effects/` — don't dump everything into one file.
+
 ## Workflow
 
 - The user is non-technical (a kid's dad). Make all code changes, explain in simple terms, proactively suggest improvements.
