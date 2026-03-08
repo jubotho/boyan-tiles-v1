@@ -2,7 +2,7 @@ export const GAME_WIDTH = 360;
 export const GAME_HEIGHT = 640;
 export const LANES = 4;
 export const LANE_WIDTH = GAME_WIDTH / LANES;
-export const STRIKE_LINE_Y = 400;
+export const STRIKE_LINE_Y = 440;
 export const TILE_HEIGHT = 150;
 export const MAX_ERRORS = 10;
 
