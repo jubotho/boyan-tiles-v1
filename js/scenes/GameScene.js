@@ -7,6 +7,7 @@ import {
     createFireTextures, updateComboFireAura, createMissFlash, createRipple,
     createAnimatedBackground, createComboMilestone, spawnRandomDramaticEvent,
     createFireTrail, updateComboBorderGlow, createNeonPulseWave,
+    createLavaTileExplosion, createLavaMissExplosion,
 } from '../effects.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -201,6 +202,8 @@ export default class GameScene extends Phaser.Scene {
                 const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
                 if (headY > this.strikeLineY + 90) {
                     tile.isHit = true;
+                    const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+                    createLavaMissExplosion(this, tx, this.strikeLineY + 30, tile.lane);
                     this.handleError('MISS!');
                     tileObj.destroy();
                 }
@@ -286,7 +289,8 @@ export default class GameScene extends Phaser.Scene {
         const tileX = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
         const isPerfect = rating === 'PERFECT';
 
-        // FIRE + NEON EXPLOSION!
+        // BRUTAL LAVA + COLOR EXPLOSION!
+        createLavaTileExplosion(this, tileX, this.strikeLineY, tile.lane, isPerfect);
         createFireExplosion(this, tileX, this.strikeLineY, isPerfect);
         createNeonExplosion(this, tileX, this.strikeLineY, isPerfect);
         createHitParticles(this, tileX, this.strikeLineY, color);
