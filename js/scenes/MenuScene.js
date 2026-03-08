@@ -64,16 +64,16 @@ export default class MenuScene extends Phaser.Scene {
         this.diffButtons = {};
         const diffs = Object.keys(DIFFICULTY);
         diffs.forEach((diff, i) => {
-            const x = 70 + i * 110;
+            const x = 45 + i * 90;
             const y = 405;
             const cfg = DIFFICULTY[diff];
 
-            const bg = this.add.rectangle(x, y, 95, 36, 0xffffff)
+            const bg = this.add.rectangle(x, y, 78, 36, 0xffffff)
                 .setStrokeStyle(2, 0xdddddd)
                 .setInteractive({ useHandCursor: true });
 
             const label = this.add.text(x, y, cfg.label, {
-                fontSize: '14px', fill: '#444', fontStyle: 'bold',
+                fontSize: '12px', fill: '#444', fontStyle: 'bold',
             }).setOrigin(0.5);
 
             bg.on('pointerdown', () => {

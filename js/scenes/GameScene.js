@@ -24,7 +24,11 @@ export default class GameScene extends Phaser.Scene {
         this.nextNoteIndex = 0;
         this.startTime = 0;
         this.bonusNames = [];
-        this.nextBonusTime = 5000 + Math.random() * 5000; // first bonus between 5-10s
+        this.nextBonusTime = 5000 + Math.random() * 5000;
+        this.isEndless = this.difficulty === 'endless';
+        this.endlessNextTime = 1500;
+        this.endlessInterval = 700; // ms between notes, decreases over time
+        this.endlessLastLane = -1;
     }
 
     create() {
@@ -36,7 +40,7 @@ export default class GameScene extends Phaser.Scene {
         }).setOrigin(0.5).setAlpha(0.03).setDepth(0);
 
         this.tiles = this.add.group();
-        this.beatmap = BEATMAPS[this.songId][this.difficulty];
+        this.beatmap = this.isEndless ? [] : BEATMAPS[this.songId][this.difficulty];
 
         const songCfg = SONGS.find(s => s.id === this.songId);
         this.bgm = createBGM(this.songId);
@@ -54,8 +58,8 @@ export default class GameScene extends Phaser.Scene {
             fontSize: '14px', fill: '#ff4444', fontStyle: 'bold',
         }).setDepth(10);
 
-        this.add.text(GAME_WIDTH - 20, 16, DIFFICULTY[this.difficulty].label.toUpperCase(), {
-            fontSize: '12px', fill: '#888', fontStyle: 'bold',
+        this.diffLabel = this.add.text(GAME_WIDTH - 20, 16, DIFFICULTY[this.difficulty].label.toUpperCase(), {
+            fontSize: '12px', fill: this.isEndless ? '#aa00ff' : '#888', fontStyle: 'bold',
         }).setOrigin(1, 0).setDepth(10);
 
         this.feedbackText = this.add.text(GAME_WIDTH / 2, 260, '', {
@@ -109,22 +113,45 @@ export default class GameScene extends Phaser.Scene {
             return true;
         });
 
-        // Song complete
-        if (this.nextNoteIndex >= this.beatmap.length && this.tiles.getChildren().length === 0) {
-            this.endGame('SONG COMPLETE!');
-            return;
-        }
+        if (this.isEndless) {
+            // Endless mode: generate tiles on the fly, speed up over time
+            // Speed increases every 10 seconds
+            const level = Math.floor(elapsed / 10000) + 1;
+            this.scrollSpeed = 280 + (level - 1) * 40;
+            // Interval decreases (faster notes), min 250ms
+            this.endlessInterval = Math.max(250, 700 - (level - 1) * 50);
+            this.diffLabel.setText('LVL ' + level);
 
-        // Spawn tiles
-        if (this.nextNoteIndex < this.beatmap.length) {
-            const note = this.beatmap[this.nextNoteIndex];
-            const [noteTime] = note;
-            const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
+            if (elapsed >= this.endlessNextTime) {
+                // Pick a random lane (avoid same lane twice in a row)
+                let lane;
+                do {
+                    lane = Math.floor(Math.random() * 4);
+                } while (lane === this.endlessLastLane);
+                this.endlessLastLane = lane;
 
-            if (elapsed >= noteTime - leadTime) {
-                const [, lane] = note;
-                this.spawnTile(lane, noteTime);
-                this.nextNoteIndex++;
+                const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
+                this.spawnTile(lane, elapsed + leadTime);
+                this.endlessNextTime = elapsed + this.endlessInterval;
+            }
+        } else {
+            // Normal mode: song complete check
+            if (this.nextNoteIndex >= this.beatmap.length && this.tiles.getChildren().length === 0) {
+                this.endGame('SONG COMPLETE!');
+                return;
+            }
+
+            // Spawn tiles from beatmap
+            if (this.nextNoteIndex < this.beatmap.length) {
+                const note = this.beatmap[this.nextNoteIndex];
+                const [noteTime] = note;
+                const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
+
+                if (elapsed >= noteTime - leadTime) {
+                    const [, lane] = note;
+                    this.spawnTile(lane, noteTime);
+                    this.nextNoteIndex++;
+                }
             }
         }
 
