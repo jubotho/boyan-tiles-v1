@@ -87,8 +87,93 @@ const song3Hard = [
     ...generatePattern(33000, 120, [2, 3, 0, 1, 2, 3, 0, 1]),
 ];
 
+// ============ SONG 4: Moonlight v2 (~108 BPM) ============
+const song4Easy = [
+    ...generatePattern(1500, 85, [0, 2, 1, 3, 0, 2, 1, 3]),
+    ...generatePattern(7500, 95, [1, 3, 0, 2, 1, 0, 3, 2, 0, 1]),
+    ...generatePattern(14000, 100, [2, 0, 3, 1, 0, 2, 3, 1, 2, 0]),
+    ...generatePattern(20500, 95, [3, 1, 0, 2, 3, 1, 2, 0, 1, 3, 0, 2]),
+    ...generatePattern(28000, 85, [0, 2, 1, 3, 0, 1, 2, 3]),
+];
+
+const song4Medium = [
+    ...generatePattern(1000, 108, [0, 2, 1, 3, 0, 2, 3, 1, 0, 2]),
+    ...generatePattern(6500, 115, [1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2]),
+    ...generatePattern(13000, 120, [2, 0, 3, 1, 2, 0, 3, 1, 0, 2, 3, 1]),
+    ...generatePattern(19500, 115, [3, 1, 0, 2, 3, 1, 2, 0, 1, 3, 0, 2, 3, 1]),
+    ...generatePattern(27000, 108, [0, 2, 1, 3, 2, 0, 3, 1, 0, 2]),
+];
+
+const song4Hard = [
+    ...generatePattern(800, 140, [0, 2, 1, 3, 0, 2, 1, 3, 2, 0, 1, 3]),
+    ...generatePattern(6000, 155, [1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 3, 1]),
+    ...generatePattern(11500, 165, [2, 0, 3, 1, 2, 0, 3, 1, 0, 2, 3, 1, 2, 0]),
+    ...generatePattern(17000, 175, [3, 1, 0, 2, 3, 1, 2, 0, 1, 3, 0, 2, 3, 1, 0, 2]),
+    ...generatePattern(22500, 155, [0, 2, 1, 3, 2, 0, 3, 1, 0, 2, 3, 1, 2, 0]),
+    ...generatePattern(28000, 140, [0, 1, 2, 3, 0, 2, 1, 3, 0, 2]),
+];
+
+// ============ SONG 5: Für Elise Remix (~140 BPM dubstep) ============
+const song5Easy = [
+    ...generatePattern(2000, 100, [0, 1, 2, 3, 0, 1, 2, 3]),
+    ...generatePattern(7000, 110, [2, 0, 3, 1, 2, 0, 1, 3, 2, 0]),
+    ...generatePattern(13000, 110, [1, 3, 0, 2, 1, 3, 0, 2, 1, 3]),
+    ...generatePattern(19000, 100, [3, 1, 2, 0, 3, 2, 1, 0, 2, 3, 0, 1]),
+    ...generatePattern(26000, 95, [0, 2, 1, 3, 0, 1, 2, 3]),
+];
+
+const song5Medium = [
+    ...generatePattern(1500, 120, [0, 1, 2, 3, 0, 1, 3, 2, 0, 1]),
+    ...generatePattern(6500, 135, [2, 0, 3, 1, 2, 0, 1, 3, 2, 0, 3, 1]),
+    ...generatePattern(12000, 140, [1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2]),
+    ...generatePattern(17500, 140, [3, 1, 2, 0, 3, 2, 1, 0, 2, 3, 0, 1, 2, 3]),
+    ...generatePattern(24000, 130, [0, 2, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3]),
+    ...generatePattern(30000, 120, [0, 1, 2, 3, 0, 2, 1, 3]),
+];
+
+const song5Hard = [
+    ...generatePattern(1000, 150, [0, 1, 2, 3, 0, 1, 3, 2, 0, 1, 2, 3]),
+    ...generatePattern(6000, 170, [2, 0, 3, 1, 2, 0, 1, 3, 2, 0, 3, 1, 0, 2]),
+    ...generatePattern(11000, 180, [1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 3, 1]),
+    ...generatePattern(16000, 190, [3, 1, 2, 0, 3, 2, 1, 0, 2, 3, 0, 1, 2, 3, 0, 1]),
+    ...generatePattern(21500, 180, [0, 2, 1, 3, 2, 0, 3, 1, 0, 2, 3, 1, 0, 2]),
+    ...generatePattern(26500, 170, [1, 3, 0, 2, 1, 0, 3, 2, 0, 1, 2, 3]),
+    ...generatePattern(31000, 150, [0, 1, 2, 3, 0, 2, 1, 3, 0, 2]),
+];
+
+// ============ SONG 6: Mozart Remix (~130 BPM) ============
+const song6Easy = [
+    ...generatePattern(1500, 95, [0, 2, 1, 3, 0, 2, 1, 3]),
+    ...generatePattern(7000, 100, [1, 0, 3, 2, 0, 3, 1, 2, 0, 1]),
+    ...generatePattern(13000, 105, [3, 1, 0, 2, 3, 1, 2, 0, 3, 1]),
+    ...generatePattern(19500, 100, [2, 0, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3]),
+    ...generatePattern(27000, 90, [0, 1, 2, 3, 1, 2, 0, 3]),
+];
+
+const song6Medium = [
+    ...generatePattern(1000, 115, [0, 2, 1, 3, 0, 2, 3, 1, 0, 2]),
+    ...generatePattern(6500, 125, [1, 0, 3, 2, 0, 3, 1, 2, 0, 1, 3, 2]),
+    ...generatePattern(12500, 130, [3, 1, 0, 2, 3, 1, 2, 0, 3, 1, 0, 2]),
+    ...generatePattern(18500, 130, [2, 0, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3, 2, 0]),
+    ...generatePattern(25500, 120, [0, 1, 2, 3, 1, 2, 0, 3, 2, 1, 0, 3]),
+    ...generatePattern(31500, 115, [0, 2, 1, 3, 0, 1, 2, 3]),
+];
+
+const song6Hard = [
+    ...generatePattern(800, 145, [0, 2, 1, 3, 0, 2, 3, 1, 0, 2, 1, 3]),
+    ...generatePattern(6000, 160, [1, 0, 3, 2, 0, 3, 1, 2, 0, 1, 3, 2, 1, 0]),
+    ...generatePattern(11500, 175, [3, 1, 0, 2, 3, 1, 2, 0, 3, 1, 0, 2, 3, 1]),
+    ...generatePattern(16500, 185, [2, 0, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3, 2, 0, 1, 3]),
+    ...generatePattern(22000, 175, [0, 1, 2, 3, 1, 2, 0, 3, 2, 1, 3, 0, 1, 2]),
+    ...generatePattern(27000, 160, [3, 0, 2, 1, 3, 0, 1, 2, 3, 0, 2, 1]),
+    ...generatePattern(32000, 145, [0, 1, 2, 3, 0, 2, 1, 3, 0, 2]),
+];
+
 export const BEATMAPS = {
     song1: { easy: song1Easy, medium: song1Medium, hard: song1Hard },
     song2: { easy: song2Easy, medium: song2Medium, hard: song2Hard },
     song3: { easy: song3Easy, medium: song3Medium, hard: song3Hard },
+    song4: { easy: song4Easy, medium: song4Medium, hard: song4Hard },
+    song5: { easy: song5Easy, medium: song5Medium, hard: song5Hard },
+    song6: { easy: song6Easy, medium: song6Medium, hard: song6Hard },
 };

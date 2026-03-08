@@ -22,4 +22,7 @@ export const SONGS = [
     { id: 'song1', title: 'Cyberpunk Dreams', artist: 'CC0 Electronic', file: 'cyberpunk_moonlight' },
     { id: 'song2', title: 'Energetic Beat', artist: 'phoenix1291', file: 'energetic_beat' },
     { id: 'song3', title: 'Neon Rush', artist: 'phoenix1291', file: 'neon_rush' },
+    { id: 'song4', title: 'Moonlight v2', artist: 'Joth (CC0)', file: 'moonlight_v2' },
+    { id: 'song5', title: 'Für Elise Remix', artist: 'Bite Star', file: 'fur_elise_remix' },
+    { id: 'song6', title: 'Mozart Remix', artist: 'Bite Star', file: 'mozart_remix' },
 ];

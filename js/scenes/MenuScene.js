@@ -12,32 +12,32 @@ export default class MenuScene extends Phaser.Scene {
         this.selectedDifficulty = 'medium';
 
         // Title
-        this.add.text(GAME_WIDTH / 2, 45, 'BOYAN', {
+        this.add.text(GAME_WIDTH / 2, 40, 'BOYAN', {
             fontSize: '36px', fill: '#ff6600', fontStyle: 'bold',
         }).setOrigin(0.5);
-        this.add.text(GAME_WIDTH / 2, 78, 'THEGAMER', {
+        this.add.text(GAME_WIDTH / 2, 72, 'THEGAMER', {
             fontSize: '16px', fill: '#ffaa00', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         // Song selection
-        this.add.text(GAME_WIDTH / 2, 120, 'SELECT SONG', {
+        this.add.text(GAME_WIDTH / 2, 105, 'SELECT SONG', {
             fontSize: '14px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         this.songCards = [];
         SONGS.forEach((song, i) => {
-            const y = 160 + i * 65;
+            const y = 135 + i * 45;
             const card = this.add.container(GAME_WIDTH / 2, y);
 
-            const bg = this.add.rectangle(0, 0, 300, 50, 0x1a1a2e)
+            const bg = this.add.rectangle(0, 0, 300, 38, 0x1a1a2e)
                 .setStrokeStyle(2, 0x333355)
                 .setInteractive({ useHandCursor: true });
 
-            const title = this.add.text(-130, -10, song.title, {
-                fontSize: '16px', fill: '#ddd', fontStyle: 'bold',
+            const title = this.add.text(-130, -8, song.title, {
+                fontSize: '14px', fill: '#ddd', fontStyle: 'bold',
             });
-            const artist = this.add.text(-130, 10, song.artist, {
-                fontSize: '12px', fill: '#777',
+            const artist = this.add.text(-130, 8, song.artist, {
+                fontSize: '10px', fill: '#777',
             });
 
             card.add([bg, title, artist]);
@@ -54,7 +54,8 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         // Difficulty selection
-        this.add.text(GAME_WIDTH / 2, 365, 'DIFFICULTY', {
+        const diffY = 135 + SONGS.length * 45 + 25;
+        this.add.text(GAME_WIDTH / 2, diffY, 'DIFFICULTY', {
             fontSize: '14px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 
@@ -62,7 +63,7 @@ export default class MenuScene extends Phaser.Scene {
         const diffs = Object.keys(DIFFICULTY);
         diffs.forEach((diff, i) => {
             const x = 45 + i * 90;
-            const y = 405;
+            const y = diffY + 35;
             const cfg = DIFFICULTY[diff];
 
             const bg = this.add.rectangle(x, y, 78, 36, 0x1a1a2e)
@@ -84,15 +85,16 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         // High score display
-        this.highScoreText = this.add.text(GAME_WIDTH / 2, 450, '', {
+        this.highScoreText = this.add.text(GAME_WIDTH / 2, diffY + 75, '', {
             fontSize: '14px', fill: '#888',
         }).setOrigin(0.5);
 
         // Play button
-        const playBtn = this.add.rectangle(GAME_WIDTH / 2, 520, 200, 55, 0xff6600)
+        const playBtnY = diffY + 115;
+        const playBtn = this.add.rectangle(GAME_WIDTH / 2, playBtnY, 200, 55, 0xff6600)
             .setInteractive({ useHandCursor: true });
 
-        this.add.text(GAME_WIDTH / 2, 520, 'PLAY', {
+        this.add.text(GAME_WIDTH / 2, playBtnY, 'PLAY', {
             fontSize: '24px', fill: '#fff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
