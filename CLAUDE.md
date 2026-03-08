@@ -28,7 +28,7 @@ js/scenes/BootScene.js  - Splash screen + audio preloader with loading bar
 js/scenes/MenuScene.js  - Song + difficulty selection, high score display
 js/scenes/GameScene.js  - Core gameplay loop (largest file), dramatic events, combo system
 js/scenes/GameOverScene.js - Results, new record fanfare, play again / menu
-audio/sfx/              - 24 WAV sound effects (8-bit retro, CC0)
+audio/sfx/              - 38 WAV sound effects: 24 retro SFX (CC0 Juhani Junkala) + 14 announcer voices (CC0 Kenney)
 audio/music/            - 3 MP3 music tracks (electronic/techno, CC0)
 ```
 
@@ -44,8 +44,12 @@ audio/music/            - 3 MP3 music tracks (electronic/techno, CC0)
 - **Scene flow**: BootScene (preload) → MenuScene → GameScene → GameOverScene → (GameScene or MenuScene)
 - **Tiles** are Phaser Graphics objects with per-lane neon colors (cyan/magenta/orange/green), animated pulse borders. Data stored via `setData('tileData', {...})`.
 - **Hit detection**: lane = `Math.floor(pointer.x / LANE_WIDTH)` clamped to `[0, LANES-1]`. Vertical window: tile center from -250 to +70 relative to strike line. Auto-miss at +90.
-- **Effects system** (`effects.js`): canvas-generated textures (fire, neon, smoke, ring particles), combo milestones at 10/25/50/100, random dramatic events every 2.5-6.5s, fire trails behind tiles, combo border glow.
+- **Effects system** (`effects.js`): canvas-generated textures (fire, neon, smoke, ring particles), combo milestones at 10/25/50/100, random dramatic events every 2.5-6.5s, fire trails behind tiles, combo border glow, **lava zone** (canvas texture at depth 7-9, tiles at depth 5 fall behind it), **color-matched tile explosions** (fragments in note's neon color at depth 25+).
+- **Lava zone depth layering**: Lava (depth 7-9) > Tiles (depth 5) > Background (depth 0-1). Explosions (depth 25+) appear above lava. Flames from lava at depth 9.
+- **Level loop**: Songs loop on completion with 15% speed increase per level. Game only ends on death.
+- **Announcer voices**: Kenney CC0 voice clips at combo milestones (10/25/50/100), level ups, new high scores.
 - **Bonus names**: "Светльо", "Боян", "Пешко", "Цвети", "Дари" spawn every 8-15s with siren, spinning/bouncing animation, tap for bonus points.
+- **Retina/HiDPI**: `resolution: window.devicePixelRatio` in Phaser config for sharp rendering.
 
 ## Workflow
 
@@ -54,58 +58,74 @@ audio/music/            - 3 MP3 music tracks (electronic/techno, CC0)
 - Git remote uses SSH alias `github-jubotho` for the `jubotho` GitHub account.
 - Push command: `git push origin main`
 
-## Finding Free Game Assets (IMPORTANT)
+## Finding Free Game Assets — FAST & EFFICIENT
 
-### Sound Effects
+### CRITICAL: Be efficient. Don't search randomly — use proven direct URLs first.
 
-**Best source: [OpenGameArt.org](https://opengameart.org)** — always filter for **CC0** license (no attribution required).
+### Proven Sources (USE THESE FIRST — direct download, no searching needed)
 
-Proven working packs:
-- **"512 Sound Effects (8-bit style)" by Juhani Junkala** — CC0, 512 retro game sounds organized by category (coins, impacts, explosions, powerups, menu, alarms, etc.). ZIP download: `https://opengameart.org/sites/default/files/The%20Essential%20Retro%20Video%20Game%20Sound%20Effects%20Collection%20%5B512%20sounds%5D.zip` (~20MB)
-- **"100 CC0 SFX"** — CC0, 100 effects (hits, explosions, metal, springs). ZIP: `https://opengameart.org/sites/default/files/100-CC0-SFX_0.zip` (~3MB)
+#### Kenney.nl (CC0, best quality, direct ZIPs)
+**Always try Kenney FIRST.** Professional quality, CC0, direct download URLs that always work.
+- **Voiceover Pack (Fighter)**: `https://kenney.nl/media/pages/assets/voiceover-pack-fighter/fdf3a1e023-1677589837/kenney_voiceover-pack-fighter.zip` — 45 OGG clips: combo, multi_kill, flawless_victory, fight, ready, prepare_yourself, winner, etc.
+- **Voiceover Pack (General)**: `https://kenney.nl/media/pages/assets/voiceover-pack/4da09a643f-1677589897/kenney_voiceover-pack.zip` — 90 OGG clips (male+female): congratulations, level_up, new_highscore, go, mission_completed, etc.
+- **Browse all Kenney assets**: `https://kenney.nl/assets` — UI packs, sound packs, music, sprites, ALL CC0.
 
-Search strategy:
-1. Search OpenGameArt: `WebSearch` for `opengameart CC0 [category] sound effects`
-2. Fetch individual pages with `WebFetch` to get direct download URLs (look for `opengameart.org/sites/default/files/...`)
-3. Download ZIP with `curl -L -o file.zip "URL"`
-4. Extract only needed files: `unzip -j archive.zip "*.wav"` or specific files with `cp`
-5. **Keep WAV format** — universally supported by browsers and Phaser
-6. Clean up: delete ZIPs and extracted pack folders, keep only selected files in `audio/sfx/`
+#### OpenGameArt.org (CC0, large catalog)
+- **512 SFX (8-bit)** by Juhani Junkala: `https://opengameart.org/sites/default/files/The%20Essential%20Retro%20Video%20Game%20Sound%20Effects%20Collection%20%5B512%20sounds%5D.zip` (~20MB, 512 retro WAV files)
+- **Cyberpunk Moonlight Sonata** (electronic MP3): `https://opengameart.org/sites/default/files/Cyberpunk%20Moonlight%20Sonata_0.mp3`
+- **Music Pack 1** by phoenix1291 (electronic, per-track ZIPs): `https://opengameart.org/sites/default/files/Music_Pack1_Track_N.zip` (replace N with 1-10)
 
-### Music Tracks
+#### VoiceBosch on itch.io (CC-BY-SA, epic announcer voices)
+Deep/brutal male voices. Free ($0 minimum). Requires attribution.
+- **WARLORD**: `https://voicebosch.itch.io/warlord-announcer-audio-pack` — Unstoppable, Dominating, Rampage, Double Kill, Triple Kill, Annihilation
+- **DRAGON**: `https://voicebosch.itch.io/dragon-announcer-audio-pack` — Killing Frenzy, Berserk, Savagery, Apocalypse (most brutal)
+- **GRENADIER**: `https://voicebosch.itch.io/grenadier-announcer-audio-pack` — Kill Streak, MVP, Epic Win, Critical Hit
 
-**Best source: [OpenGameArt.org](https://opengameart.org)** CC0 collections.
+### Efficient Download Workflow
 
-Proven working sources:
-- **"Cyberpunk Moonlight Sonata"** — CC0 electronic, MP3 2.3MB. Direct: `https://opengameart.org/sites/default/files/Cyberpunk%20Moonlight%20Sonata_0.mp3`
-- **"Music Pack 1" by phoenix1291** — CC0, 10 electronic tracks in ZIP (each track is a separate ZIP with FLAC/MP3/OGG/WAV). Individual track ZIPs: `https://opengameart.org/sites/default/files/Music_Pack1_Track_N.zip`
-- **CC0 Upbeat/Electronic Music collection page**: `https://opengameart.org/content/cc0-dance-electronic-music` (50+ tracks, browse individual pages for download links)
+```bash
+# 1. Download to /tmp (don't pollute project)
+mkdir -p /tmp/asset_pack && cd /tmp/asset_pack
+curl -L -o pack.zip "DIRECT_URL"
 
-Search strategy:
-1. `WebSearch` for `opengameart CC0 electronic techno dance music mp3`
-2. `WebFetch` individual track pages to find direct download URLs
-3. Download with `curl -L -o name.mp3 "URL"`
-4. For ZIP packs: extract only MP3 (`unzip -j pack.zip "*.mp3"`)
-5. If only WAV available, convert: `afconvert input.wav output.m4a -d aac -f m4af -b 128000` (macOS)
-6. **Target size: 2-5MB per track** (MP3). WAV files 10MB+ are too large — convert or find MP3.
-7. Keep files in `audio/music/`, reference in `constants.js` SONGS array `file` field.
+# 2. ALWAYS verify it's actually a ZIP (not HTML error page)
+file pack.zip
 
-### General Tips for Finding Assets
+# 3. Extract
+unzip -o pack.zip -d extracted
 
-- **Always prefer CC0** over CC-BY (no attribution hassle) or CC-BY-SA (viral license).
-- **NEVER link to external URLs at runtime** — always download and commit to repo. External URLs break (403, CORS, removed).
-- **OpenGameArt download URLs** follow pattern: `https://opengameart.org/sites/default/files/[filename]`
-- **Check file type after download**: `file downloaded.zip` — sometimes you get HTML (broken link) instead of actual file.
-- **goo.gl and other shortened URLs** often fail — use direct OpenGameArt URLs instead.
-- Other CC0 sources (less tested): Freesound.org, itch.io (filter CC0), Pixabay (had 403 issues before).
-- **Mixkit.co** has game sounds but no easy direct download URLs — harder to automate.
-- For **sprites/images**: OpenGameArt also has 2D assets. Kenney.nl has excellent CC0 game assets.
+# 4. Find what you need
+find extracted -name "*.ogg" -o -name "*.wav" -o -name "*.mp3" | head -50
 
-### Integration Pattern
+# 5. Convert OGG→WAV (Phaser prefers WAV for SFX)
+afconvert input.ogg output.wav -d LEI16 -f WAVE
 
-When adding new audio to the game:
-1. Put SFX files in `audio/sfx/`, music in `audio/music/`
+# 6. Copy only needed files to project
+cp selected_file.wav /Users/svetoslavmitov/hobby/boyan-tiles-v1/audio/sfx/
+```
+
+### Key Rules
+
+- **NEVER use external URLs at runtime** — download and commit. External URLs return 403/CORS errors.
+- **Prefer CC0** (no attribution) over CC-BY/CC-BY-SA.
+- **WAV for SFX** (small, instant playback), **MP3 for music** (compressed, 2-5MB target).
+- **OGG→WAV conversion** on macOS: `afconvert input.ogg output.wav -d LEI16 -f WAVE`
+- **WAV→M4A conversion** (if WAV music too large): `afconvert input.wav output.m4a -d aac -f m4af -b 128000`
+- **Always `file downloaded.zip`** after download — goo.gl/shortened URLs often return HTML instead of actual files.
+- **Use absolute paths** in curl/unzip commands — CWD can change between commands.
+
+### Searching for NEW Assets (only if proven sources above don't have what you need)
+
+1. `WebSearch` for `kenney.nl [category]` — check Kenney first
+2. `WebSearch` for `opengameart CC0 [category]` — then OpenGameArt
+3. `WebFetch` the page to find direct download URL (pattern: `opengameart.org/sites/default/files/...`)
+4. For itch.io: browse the page, download link is usually behind a "Download Now" button
+5. **Freesound.org** — CC0 sounds, but requires login to download (harder to automate)
+
+### Integration into Game
+
+1. Put SFX in `audio/sfx/`, music in `audio/music/`
 2. Add SFX keys to `SFX_FILES` array in `audio.js` → auto-loaded by `preloadSFX()`
 3. Add music to `SONGS` array in `constants.js` with `file` field → auto-loaded by BootScene
 4. Create play functions in `audio.js` with `playRandom([keys], volume)` for variations
-5. Always add procedural fallback in case files don't load
+5. SFX volume: 0.15-0.3 range. Music volume: 0.8. Music should lead, SFX should not overpower it.
