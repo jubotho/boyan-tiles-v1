@@ -1,4 +1,4 @@
-import { GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, SONGS } from '../constants.js';
 import { preloadSFX, setSoundManager } from '../audio.js';
 
 export default class BootScene extends Phaser.Scene {
@@ -7,13 +7,37 @@ export default class BootScene extends Phaser.Scene {
     }
 
     preload() {
-        // Show loading text
-        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 60, 'Loading sounds...', {
+        // Loading bar
+        const barW = 200;
+        const barH = 16;
+        const barX = GAME_WIDTH / 2 - barW / 2;
+        const barY = GAME_HEIGHT / 2 + 50;
+
+        const barBg = this.add.rectangle(GAME_WIDTH / 2, barY + barH / 2, barW, barH, 0x222244)
+            .setStrokeStyle(1, 0x444466);
+        const barFill = this.add.rectangle(barX, barY, 0, barH, 0xff6600).setOrigin(0, 0);
+
+        const loadText = this.add.text(GAME_WIDTH / 2, barY + 30, 'Loading...', {
             fontSize: '12px', fill: '#666',
         }).setOrigin(0.5);
 
+        this.load.on('progress', (val) => {
+            barFill.width = barW * val;
+        });
+
+        this.load.on('complete', () => {
+            loadText.setText('Ready!');
+        });
+
         // Load all SFX files
         preloadSFX(this);
+
+        // Load music tracks
+        SONGS.forEach(song => {
+            if (song.file) {
+                this.load.audio(`music_${song.id}`, `audio/music/${song.file}.mp3`);
+            }
+        });
     }
 
     create() {

@@ -14,7 +14,7 @@ export const DIFFICULTY = {
 };
 
 export const SONGS = [
-    { id: 'song1', title: 'Piano Dreams', artist: 'Procedural' },
-    { id: 'song2', title: 'Energetic Beat', artist: 'Procedural' },
-    { id: 'song3', title: 'Chill Vibes', artist: 'Procedural' },
+    { id: 'song1', title: 'Cyberpunk Dreams', artist: 'CC0 Electronic', file: 'cyberpunk_moonlight' },
+    { id: 'song2', title: 'Energetic Beat', artist: 'phoenix1291', file: 'energetic_beat' },
+    { id: 'song3', title: 'Neon Rush', artist: 'phoenix1291', file: 'neon_rush' },
 ];
