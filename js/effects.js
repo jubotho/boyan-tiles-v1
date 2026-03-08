@@ -206,7 +206,8 @@ export function createGradientTile(scene, x, y, width, height, isLong) {
     const stepH = height / steps;
 
     for (let i = 0; i < steps; i++) {
-        const v = Math.floor(20 + (i / steps) * 40);
+        // Bright white-to-grey gradient on dark background
+        const v = Math.floor(220 - (i / steps) * 80);
         const color = (v << 16) | (v << 8) | v;
         gfx.fillStyle(color, 1);
         gfx.fillRoundedRect(
@@ -220,7 +221,8 @@ export function createGradientTile(scene, x, y, width, height, isLong) {
         );
     }
 
-    gfx.fillStyle(0xffffff, 0.15);
+    // Shine at top
+    gfx.fillStyle(0xffffff, 0.3);
     gfx.fillRoundedRect(x - width / 2 + 4, y - height / 2 + 2, width - 8, 3, 2);
 
     return gfx;
@@ -274,34 +276,42 @@ export function createRipple(scene, x, y) {
 
 export function createAnimatedBackground(scene) {
     const bg = scene.add.graphics().setDepth(0);
-    bg.lineStyle(1, 0xe8e8e8);
+    bg.lineStyle(1, 0x222233);
     for (let i = 1; i < LANES; i++) {
         bg.lineBetween(i * LANE_WIDTH, 0, i * LANE_WIDTH, GAME_HEIGHT);
     }
 
-    // Strike line with fire glow
+    // Strike line — fiery glow layers
     const glowLine = scene.add.graphics().setDepth(1);
-    glowLine.fillStyle(0xff6600, 0.06);
-    glowLine.fillRect(0, scene.strikeLineY - 20, GAME_WIDTH, 40);
-    glowLine.fillStyle(0xff3300, 0.04);
-    glowLine.fillRect(0, scene.strikeLineY - 10, GAME_WIDTH, 20);
-    glowLine.lineStyle(2, 0xff6600, 0.6);
+    glowLine.fillStyle(0xff4400, 0.12);
+    glowLine.fillRect(0, scene.strikeLineY - 25, GAME_WIDTH, 50);
+    glowLine.fillStyle(0xff6600, 0.15);
+    glowLine.fillRect(0, scene.strikeLineY - 12, GAME_WIDTH, 24);
+    glowLine.fillStyle(0xffaa00, 0.1);
+    glowLine.fillRect(0, scene.strikeLineY - 4, GAME_WIDTH, 8);
+    glowLine.lineStyle(3, 0xff6600, 0.9);
     glowLine.lineBetween(0, scene.strikeLineY, GAME_WIDTH, scene.strikeLineY);
 
-    // Embers floating up from strike line
-    for (let i = 0; i < 20; i++) {
+    // Embers rising from strike line
+    for (let i = 0; i < 30; i++) {
         const px = Math.random() * GAME_WIDTH;
-        const py = scene.strikeLineY + Math.random() * 20 - 10;
-        const dot = scene.add.circle(px, py, 1 + Math.random() * 1.5, 0xff6600, 0.15).setDepth(0);
+        const py = scene.strikeLineY + Math.random() * 10 - 5;
+        const colors = [0xff4400, 0xff6600, 0xff8800, 0xffaa00, 0xffcc00];
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        const dot = scene.add.circle(px, py, 1 + Math.random() * 2, c, 0.4 + Math.random() * 0.3)
+            .setDepth(2)
+            .setBlendMode(Phaser.BlendModes.ADD);
         scene.tweens.add({
             targets: dot,
-            y: py - 60 - Math.random() * 80,
-            x: px + (Math.random() - 0.5) * 30,
+            y: py - 80 - Math.random() * 120,
+            x: px + (Math.random() - 0.5) * 40,
             alpha: 0,
-            duration: 2000 + Math.random() * 3000,
+            scaleX: 0.2,
+            scaleY: 0.2,
+            duration: 1500 + Math.random() * 2000,
             repeat: -1,
+            delay: Math.random() * 2000,
             ease: 'Sine.easeOut',
-            onComplete: () => { dot.x = Math.random() * GAME_WIDTH; dot.y = py; dot.alpha = 0.15; },
         });
     }
 }

@@ -33,12 +33,11 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         createFireTextures(this);
-        this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0xffffff);
         createAnimatedBackground(this);
 
         this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Boyan THEGAMER\nrocks!', {
-            fontSize: '32px', fill: '#000', fontStyle: 'bold', align: 'center',
-        }).setOrigin(0.5).setAlpha(0.03).setDepth(0);
+            fontSize: '32px', fill: '#fff', fontStyle: 'bold', align: 'center',
+        }).setOrigin(0.5).setAlpha(0.04).setDepth(0);
 
         this.tiles = this.add.group();
         this.beatmap = this.isEndless ? [] : BEATMAPS[this.songId][this.difficulty];
@@ -48,7 +47,7 @@ export default class GameScene extends Phaser.Scene {
 
         // UI
         this.scoreText = this.add.text(GAME_WIDTH / 2, 50, '0', {
-            fontSize: '64px', fill: '#222', fontStyle: 'bold',
+            fontSize: '64px', fill: '#fff', fontStyle: 'bold',
         }).setOrigin(0.5).setDepth(10);
 
         this.comboText = this.add.text(GAME_WIDTH / 2, 105, '', {

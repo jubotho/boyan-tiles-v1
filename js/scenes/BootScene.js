@@ -6,10 +6,11 @@ export default class BootScene extends Phaser.Scene {
     }
 
     create() {
-        // No assets to preload — all audio is procedural
-        this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0xf8f8ff);
-        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Boyan THEGAMER', {
-            fontSize: '28px', fill: '#00aaff', fontStyle: 'bold',
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, 'BOYAN', {
+            fontSize: '42px', fill: '#ff6600', fontStyle: 'bold',
+        }).setOrigin(0.5);
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20, 'THEGAMER', {
+            fontSize: '18px', fill: '#ffaa00', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         this.time.delayedCall(600, () => {
