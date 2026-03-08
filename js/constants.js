@@ -3,14 +3,14 @@ export const GAME_HEIGHT = 640;
 export const LANES = 4;
 export const LANE_WIDTH = GAME_WIDTH / LANES;
 export const STRIKE_LINE_Y = 440;
-export const TILE_HEIGHT = 150;
+export const TILE_HEIGHT = 110;
 export const MAX_ERRORS = 10;
 
 export const DIFFICULTY = {
-    easy:     { scrollSpeed: 300, label: 'Easy',     color: 0x44cc44 },
-    medium:   { scrollSpeed: 480, label: 'Medium',   color: 0xffaa00 },
-    hard:     { scrollSpeed: 660, label: 'Hard',     color: 0xff4444 },
-    endless:  { scrollSpeed: 280, label: 'Endless',  color: 0xaa00ff },
+    easy:     { scrollSpeed: 180, label: 'Easy',     color: 0x44cc44 },
+    medium:   { scrollSpeed: 300, label: 'Medium',   color: 0xffaa00 },
+    hard:     { scrollSpeed: 420, label: 'Hard',     color: 0xff4444 },
+    endless:  { scrollSpeed: 180, label: 'Endless',  color: 0xaa00ff },
 };
 
 export const SONGS = [

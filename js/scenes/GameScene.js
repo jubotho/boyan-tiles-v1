@@ -128,7 +128,7 @@ export default class GameScene extends Phaser.Scene {
             // Endless mode: generate tiles on the fly, speed up over time
             // Speed increases every 10 seconds
             const level = Math.floor(elapsed / 10000) + 5;
-            this.scrollSpeed = 280 + (level - 1) * 40;
+            this.scrollSpeed = 180 + (level - 1) * 25;
             // Interval decreases (faster notes), min 250ms
             this.endlessInterval = Math.max(250, 700 - (level - 1) * 50);
             this.diffLabel.setText('LVL ' + level);
@@ -152,17 +152,16 @@ export default class GameScene extends Phaser.Scene {
             }
 
             // Spawn tiles from beatmap (with time offset for looping)
-            if (this.nextNoteIndex < this.beatmap.length) {
+            const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
+            while (this.nextNoteIndex < this.beatmap.length) {
                 const note = this.beatmap[this.nextNoteIndex];
                 const [noteTime] = note;
                 const adjustedTime = noteTime + this.beatmapTimeOffset;
-                const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
 
-                if (elapsed >= adjustedTime - leadTime) {
-                    const [, lane] = note;
-                    this.spawnTile(lane, adjustedTime);
-                    this.nextNoteIndex++;
-                }
+                if (elapsed < adjustedTime - leadTime) break;
+                const [, lane] = note;
+                this.spawnTile(lane, adjustedTime);
+                this.nextNoteIndex++;
             }
         }
 
@@ -243,7 +242,6 @@ export default class GameScene extends Phaser.Scene {
             const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
 
             // Tappable if tile center is within range (generous window)
-            // Tile is 150px tall, so even at +60 below, tile top is still above the line
             if (headY <= this.strikeLineY + 70 && headY > this.strikeLineY - 250) {
                 const distAbove = this.strikeLineY - headY;
                 this.processHit(tileObj, distAbove);
