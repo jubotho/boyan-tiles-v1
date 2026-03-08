@@ -2,9 +2,15 @@ export const GAME_WIDTH = 360;
 export const GAME_HEIGHT = 640;
 export const LANES = 4;
 export const LANE_WIDTH = GAME_WIDTH / LANES;
-export const STRIKE_LINE_Y = 440;
+export const STRIKE_LINE_Y = 540;
 export const TILE_HEIGHT = 110;
 export const MAX_ERRORS = 10;
+
+// Hit detection windows (pixels relative to strike line)
+export const HIT_WINDOW_ABOVE = 250;
+export const HIT_WINDOW_BELOW = 70;
+export const AUTO_MISS_THRESHOLD = 90;
+export const PERFECT_THRESHOLD = 40;
 
 export const DIFFICULTY = {
     easy:     { scrollSpeed: 180, label: 'Easy',     color: 0x44cc44 },

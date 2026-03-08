@@ -64,14 +64,15 @@ export function createAnimatedBackground(scene) {
             lCtx.fill();
         }
 
-        // Super bright surface glow (top 20px)
-        const surfGrad = lCtx.createLinearGradient(0, 0, 0, 25);
+        // Super bright surface glow (top portion)
+        const surfGlowH = Math.min(20, lavaHeight * 0.2);
+        const surfGrad = lCtx.createLinearGradient(0, 0, 0, surfGlowH);
         surfGrad.addColorStop(0, 'rgba(255, 220, 80, 0.9)');
         surfGrad.addColorStop(0.3, 'rgba(255, 150, 0, 0.6)');
         surfGrad.addColorStop(0.7, 'rgba(255, 80, 0, 0.3)');
         surfGrad.addColorStop(1, 'rgba(200, 40, 0, 0)');
         lCtx.fillStyle = surfGrad;
-        lCtx.fillRect(0, 0, GAME_WIDTH, 25);
+        lCtx.fillRect(0, 0, GAME_WIDTH, surfGlowH);
 
         // Bright spots (glowing magma pools)
         for (let i = 0; i < 12; i++) {
@@ -123,9 +124,9 @@ export function createAnimatedBackground(scene) {
     });
 
     // === LAVA BUBBLES — glowing circles that rise and pop ===
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 8; i++) {
         const bx = Math.random() * GAME_WIDTH;
-        const by = lavaTop + 30 + Math.random() * (lavaHeight - 50);
+        const by = lavaTop + 15 + Math.random() * (lavaHeight - 25);
         const bubbleSize = 4 + Math.random() * 10;
         const bubbleColors = [0xff6600, 0xff8800, 0xffaa00, 0xffcc00, 0xffff44];
         const bc = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
@@ -146,7 +147,7 @@ export function createAnimatedBackground(scene) {
             ease: 'Sine.easeOut',
             onRepeat: () => {
                 bubble.x = Math.random() * GAME_WIDTH;
-                bubble.y = lavaTop + 30 + Math.random() * (lavaHeight - 50);
+                bubble.y = lavaTop + 15 + Math.random() * (lavaHeight - 25);
                 bubble.setScale(1);
                 bubble.setAlpha(0.4 + Math.random() * 0.4);
             },
@@ -154,7 +155,7 @@ export function createAnimatedBackground(scene) {
     }
 
     // === FLAMES SHOOTING UP from lava — ABOVE lava (depth 9) ===
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < 20; i++) {
         const fx = Math.random() * GAME_WIDTH;
         const fy = lavaTop + Math.random() * 5;
         const flameSize = 0.3 + Math.random() * 0.7;
@@ -187,7 +188,7 @@ export function createAnimatedBackground(scene) {
     }
 
     // === LARGE SPORADIC FLAME BURSTS ===
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 5; i++) {
         const fx = Math.random() * GAME_WIDTH;
 
         const bigFlame = scene.add.image(fx, lavaTop, 'bigFireParticle')
@@ -215,7 +216,7 @@ export function createAnimatedBackground(scene) {
     }
 
     // === SPARK SPRAY from lava ===
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 15; i++) {
         const sx = Math.random() * GAME_WIDTH;
         const sy = lavaTop;
 

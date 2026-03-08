@@ -48,10 +48,10 @@ audio/music/                    - 3 MP3 music tracks (electronic/techno, CC0)
 - **Dark theme + ADD blend mode** — fire/neon particles use `Phaser.BlendModes.ADD` which requires dark background to be visible. Game bg is `#0a0a12`.
 - **tsparticles** (v3.9.1, CDN) provides ambient fire particles behind the game canvas.
 - **Beatmap format**: `[timestamp_ms, lane (0-3), isLong, duration_ms]` tuples. `beatmaps.js` has a `generatePattern(startTime, bpm, notes)` helper.
-- **4 difficulty modes**: easy (300), medium (480), hard (660), endless (starts level 5, speeds up every 10s).
+- **4 difficulty modes**: easy (180), medium (300), hard (420), endless (starts level 5, speeds up every 10s).
 - **Scene flow**: BootScene (preload) → MenuScene → GameScene → GameOverScene → (GameScene or MenuScene)
 - **Tiles** are Phaser Graphics objects with per-lane neon colors (cyan/magenta/orange/green), animated pulse borders. Data stored via `setData('tileData', {...})`.
-- **Hit detection**: lane = `Math.floor(pointer.x / LANE_WIDTH)` clamped to `[0, LANES-1]`. Vertical window: tile center from -250 to +70 relative to strike line. Auto-miss at +90.
+- **Hit detection**: lane = `Math.floor(pointer.x / LANE_WIDTH)` clamped to `[0, LANES-1]`. Vertical window controlled by constants: `HIT_WINDOW_ABOVE` (250px above), `HIT_WINDOW_BELOW` (70px below), `AUTO_MISS_THRESHOLD` (90px below), `PERFECT_THRESHOLD` (40px). All defined in `constants.js`.
 - **Effects system** (`js/effects/`): modular effects split into 8 files. Textures, explosions, milestones, dramatic events, tile rendering, feedback, lava explosions, and background are separate modules. `index.js` barrel re-exports everything. `LANE_COLORS` shared constant lives in `textures.js`.
 - **Lava zone depth layering**: Lava (depth 7-9) > Tiles (depth 5) > Background (depth 0-1). Explosions (depth 25+) appear above lava. Flames from lava at depth 9.
 - **Level loop**: Songs loop on completion with 15% speed increase per level. Game only ends on death.

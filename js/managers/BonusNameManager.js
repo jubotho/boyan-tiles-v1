@@ -1,6 +1,6 @@
 // ========== Bonus Name Spawning & Lifecycle ==========
 
-import { GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
+import { GAME_WIDTH, STRIKE_LINE_Y } from '../constants.js';
 import { playSiren } from '../audio.js';
 
 const BONUS_NAMES = ['Светльо', 'Боян', 'Пешко', 'Цвети', 'Дари'];
@@ -13,7 +13,7 @@ export function spawnBonusName(scene) {
     playSiren();
 
     const x = 60 + Math.random() * (GAME_WIDTH - 120);
-    const y = 80 + Math.random() * (GAME_HEIGHT - 250);
+    const y = 80 + Math.random() * (STRIKE_LINE_Y - 160);
 
     const container = scene.add.container(x, y).setDepth(20);
 

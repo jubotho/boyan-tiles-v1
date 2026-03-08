@@ -1,4 +1,4 @@
-import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
+import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT, HIT_WINDOW_ABOVE, HIT_WINDOW_BELOW, AUTO_MISS_THRESHOLD, PERFECT_THRESHOLD } from '../constants.js';
 import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, initAudio, createBGM, playAnnouncerCombo, playAnnouncerLevelUp } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
@@ -193,7 +193,7 @@ export default class GameScene extends Phaser.Scene {
             // Below the line = lose a life
             if (!tile.isHit) {
                 const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
-                if (headY > this.strikeLineY + 90) {
+                if (headY > this.strikeLineY + AUTO_MISS_THRESHOLD) {
                     tile.isHit = true;
                     const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
                     createLavaMissExplosion(this, tx, this.strikeLineY + 30, tile.lane);
@@ -241,8 +241,8 @@ export default class GameScene extends Phaser.Scene {
             const timeDiff = elapsed - tile.targetTime;
             const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
 
-            // Tappable if tile center is within range (generous window)
-            if (headY <= this.strikeLineY + 70 && headY > this.strikeLineY - 250) {
+            // Tappable if tile center is within hit window
+            if (headY <= this.strikeLineY + HIT_WINDOW_BELOW && headY > this.strikeLineY - HIT_WINDOW_ABOVE) {
                 const distAbove = this.strikeLineY - headY;
                 this.processHit(tileObj, distAbove);
                 hitFound = true;
@@ -264,7 +264,7 @@ export default class GameScene extends Phaser.Scene {
         let points = 50;
         let color = 0x00ff88;
 
-        if (dist > 40) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
+        if (dist > PERFECT_THRESHOLD) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
 
         // Play different sound for PERFECT vs GREAT
         if (rating === 'PERFECT') {
