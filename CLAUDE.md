@@ -19,7 +19,7 @@ Everything lives in `index.html` — HTML, CSS, inline JavaScript, and game logi
 - **Beatmap**: Hardcoded array of `[timestamp_ms, lane_index, isLong, duration_ms]` tuples that define when/where tiles appear
 - **Tile types**: Regular tap tiles (black) and long hold tiles (blue) with duration
 - **Scoring**: PERFECT/GREAT/GOOD ratings based on distance from strike line, combo multiplier system
-- **Audio**: Background music and SFX loaded from external CDN URLs (Pixabay)
+- **Audio**: BGM loaded via Phaser from Pixabay CDN; hit/miss SFX generated with Web Audio API oscillators (Phaser rejects data URIs)
 
 ## Key Game Mechanics
 
@@ -27,3 +27,10 @@ Everything lives in `index.html` — HTML, CSS, inline JavaScript, and game logi
 - Hold tiles require sustained touch until duration expires
 - Misses (tapping empty lanes, missing tiles, releasing holds early) cost lives
 - Game ends when lives reach 0; reloads page to restart
+
+## Workflow
+
+- The user is non-technical. Make all code changes, explain in simple terms, and proactively suggest improvements.
+- **Always commit and push** after every change — the repo is connected to Vercel and auto-deploys on push.
+- Git remote uses SSH alias `github-jubotho` for the `jubotho` GitHub account.
+- Push command: `git push origin main`
