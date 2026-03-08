@@ -40,6 +40,24 @@ export function playMenuStart() {
     setTimeout(() => playTone(880, 0.15, 'sine', 0.3), 200);
 }
 
+export function playSiren() {
+    const ctx = getContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.15);
+    osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.3);
+    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.45);
+    osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.6);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.7);
+}
+
 export function initAudio() {
     getContext();
 }
