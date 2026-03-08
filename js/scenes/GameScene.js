@@ -182,6 +182,12 @@ export default class GameScene extends Phaser.Scene {
 
             tileObj.y = newY - tile.spawnY + (h / 2);
 
+            // Move pulse rect with tile
+            const pulseRect = tileObj.getData('pulseRect');
+            if (pulseRect && !pulseRect.destroyed) {
+                pulseRect.y = tileObj.y + tile.spawnY;
+            }
+
             // Combo fire aura on tiles
             if (!tile.isHit) {
                 updateComboFireAura(this, tileObj, this.combo);
@@ -207,7 +213,7 @@ export default class GameScene extends Phaser.Scene {
         const h = TILE_HEIGHT;
         const spawnY = -200;
 
-        const gfx = createGradientTile(this, x, spawnY, LANE_WIDTH - 6, h, false);
+        const gfx = createGradientTile(this, x, spawnY, LANE_WIDTH - 6, h, lane);
         gfx.setDepth(5);
 
         gfx.setData('tileData', {

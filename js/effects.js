@@ -692,39 +692,128 @@ export function updateComboFireAura(scene, tileObj, combo) {
     }
 }
 
-// ========== NEON GRADIENT TILE ==========
+// ========== BRUTAL NEON TILE ==========
 
-export function createGradientTile(scene, x, y, width, height, isLong) {
+// Per-lane neon color schemes
+const LANE_COLORS = [
+    { main: 0x00ffff, dark: 0x003344, mid: 0x006688, glow: 0x00ccff, name: 'cyan' },
+    { main: 0xff00ff, dark: 0x330033, mid: 0x660066, glow: 0xcc00ff, name: 'magenta' },
+    { main: 0xff6600, dark: 0x331100, mid: 0x662200, glow: 0xff8800, name: 'orange' },
+    { main: 0x00ff66, dark: 0x003311, mid: 0x006622, glow: 0x00ff88, name: 'green' },
+];
+
+export function createGradientTile(scene, x, y, width, height, lane) {
     const gfx = scene.add.graphics();
-    const steps = 8;
-    const stepH = height / steps;
+    const colors = LANE_COLORS[lane % 4];
+    const left = x - width / 2;
+    const top = y - height / 2;
+    const r = 8;
 
+    // === OUTER GLOW (wide, faint) ===
+    gfx.fillStyle(colors.main, 0.06);
+    gfx.fillRoundedRect(left - 6, top - 6, width + 12, height + 12, r + 4);
+    gfx.fillStyle(colors.main, 0.1);
+    gfx.fillRoundedRect(left - 3, top - 3, width + 6, height + 6, r + 2);
+
+    // === DARK BODY with vertical gradient ===
+    const steps = 10;
+    const stepH = height / steps;
     for (let i = 0; i < steps; i++) {
-        const v = Math.floor(220 - (i / steps) * 80);
-        const color = (v << 16) | (v << 8) | v;
-        gfx.fillStyle(color, 1);
+        const t = i / steps;
+        // Dark base that gets slightly lighter in the middle
+        const midBright = 1 - Math.abs(t - 0.4) * 1.5; // peak brightness at 40%
+        const r2 = ((colors.dark >> 16) & 0xff) + Math.floor(midBright * 30);
+        const g2 = ((colors.dark >> 8) & 0xff) + Math.floor(midBright * 30);
+        const b2 = (colors.dark & 0xff) + Math.floor(midBright * 30);
+        const bodyColor = (Math.min(r2, 255) << 16) | (Math.min(g2, 255) << 8) | Math.min(b2, 255);
+
+        gfx.fillStyle(bodyColor, 0.95);
         gfx.fillRoundedRect(
-            x - width / 2,
-            y - height / 2 + i * stepH,
-            width,
-            stepH + 1,
-            i === 0 ? { tl: 6, tr: 6, bl: 0, br: 0 } :
-            i === steps - 1 ? { tl: 0, tr: 0, bl: 6, br: 6 } :
-            0
+            left, top + i * stepH, width, stepH + 1,
+            i === 0 ? { tl: r, tr: r, bl: 0, br: 0 } :
+            i === steps - 1 ? { tl: 0, tr: 0, bl: r, br: r } : 0
         );
     }
 
-    // Shine at top
-    gfx.fillStyle(0xffffff, 0.3);
-    gfx.fillRoundedRect(x - width / 2 + 4, y - height / 2 + 2, width - 8, 3, 2);
+    // === INNER NEON GLOW at edges ===
+    // Left edge glow
+    for (let g = 0; g < 3; g++) {
+        gfx.fillStyle(colors.main, 0.12 - g * 0.03);
+        gfx.fillRect(left + g * 3, top + r, 4 - g, height - r * 2);
+    }
+    // Right edge glow
+    for (let g = 0; g < 3; g++) {
+        gfx.fillStyle(colors.main, 0.12 - g * 0.03);
+        gfx.fillRect(left + width - 4 + g, top + r, 4 - g, height - r * 2);
+    }
+    // Top edge glow
+    for (let g = 0; g < 3; g++) {
+        gfx.fillStyle(colors.main, 0.15 - g * 0.04);
+        gfx.fillRect(left + r, top + g * 2, width - r * 2, 3 - g);
+    }
+    // Bottom edge glow
+    for (let g = 0; g < 2; g++) {
+        gfx.fillStyle(colors.glow, 0.08 - g * 0.03);
+        gfx.fillRect(left + r, top + height - 3 + g, width - r * 2, 3 - g);
+    }
 
-    // Neon edge glow — left and right borders
-    gfx.lineStyle(2, 0x00ccff, 0.3);
-    gfx.strokeRoundedRect(x - width / 2, y - height / 2, width, height, 6);
+    // === BRIGHT NEON BORDER ===
+    gfx.lineStyle(2.5, colors.main, 0.7);
+    gfx.strokeRoundedRect(left, top, width, height, r);
 
-    // Inner subtle neon line
-    gfx.lineStyle(1, 0x00ffff, 0.15);
-    gfx.strokeRoundedRect(x - width / 2 + 2, y - height / 2 + 2, width - 4, height - 4, 4);
+    // === INNER BORDER (subtle) ===
+    gfx.lineStyle(1, colors.glow, 0.25);
+    gfx.strokeRoundedRect(left + 3, top + 3, width - 6, height - 6, r - 2);
+
+    // === TOP SHINE STREAK ===
+    gfx.fillStyle(0xffffff, 0.25);
+    gfx.fillRoundedRect(left + 8, top + 4, width - 16, 3, 2);
+    gfx.fillStyle(colors.main, 0.2);
+    gfx.fillRoundedRect(left + 12, top + 8, width - 24, 2, 1);
+
+    // === CENTER HORIZONTAL NEON LINE ===
+    const cy = top + height * 0.4;
+    gfx.fillStyle(colors.main, 0.12);
+    gfx.fillRect(left + 6, cy - 1, width - 12, 2);
+    gfx.fillStyle(colors.glow, 0.06);
+    gfx.fillRect(left + 6, cy - 4, width - 12, 8);
+
+    // === BOTTOM FIRE GLOW ===
+    gfx.fillStyle(0xff4400, 0.08);
+    gfx.fillRoundedRect(left + 4, top + height - 20, width - 8, 18, { tl: 0, tr: 0, bl: r - 2, br: r - 2 });
+    gfx.fillStyle(0xff6600, 0.05);
+    gfx.fillRoundedRect(left + 8, top + height - 12, width - 16, 10, { tl: 0, tr: 0, bl: r - 4, br: r - 4 });
+
+    // === CORNER ACCENTS (small bright dots) ===
+    const cornerSize = 3;
+    gfx.fillStyle(colors.main, 0.6);
+    gfx.fillCircle(left + r, top + r, cornerSize);
+    gfx.fillCircle(left + width - r, top + r, cornerSize);
+    gfx.fillCircle(left + r, top + height - r, cornerSize);
+    gfx.fillCircle(left + width - r, top + height - r, cornerSize);
+
+    // === Animated neon pulse on border ===
+    const pulseRect = scene.add.rectangle(x, y, width + 2, height + 2, colors.main, 0)
+        .setDepth(5).setStrokeStyle(2, colors.main, 0.4);
+
+    scene.tweens.add({
+        targets: pulseRect,
+        alpha: 0,
+        duration: 800 + Math.random() * 400,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+    });
+
+    // Store pulse rect for cleanup
+    gfx.setData('pulseRect', pulseRect);
+
+    // Override destroy to clean up pulse
+    const origDestroy = gfx.destroy.bind(gfx);
+    gfx.destroy = function () {
+        if (pulseRect && !pulseRect.destroyed) pulseRect.destroy();
+        origDestroy();
+    };
 
     return gfx;
 }
