@@ -66,37 +66,55 @@
         let combo = 0;
         let errors = 0;
         let isGameOver = false;
+        let gameStarted = false;
         let tiles;
         let scoreText;
         let errorText;
         let feedbackText;
         let comboText;
         let activeHoldTile = null;
+        
+        // Sounds
+        let bgm;
+        let hitSfx;
+        let missSfx;
 
         // Beatmap: [timestamp_ms, lane_index, isLong, duration_ms]
+        // Shortened the long tiles significantly (800ms-1200ms max)
         const beatmap = [
             [1000, 0, false], [1500, 2, false], [2000, 1, false], [2500, 3, false],
-            [3000, 0, true, 1200], 
+            [3000, 0, true, 800], 
             [4500, 2, false], [5000, 1, false], 
-            [5500, 3, true, 1500], 
+            [5500, 3, true, 900], 
             [7500, 0, false], [8000, 1, false], [8500, 2, false], [9000, 3, false],
             [9500, 0, false], [9800, 1, false], [10100, 2, false], [10400, 3, false],
-            [11000, 1, true, 2000]
+            [11000, 1, true, 1100],
+            [13000, 2, false], [13400, 0, false], [13800, 3, false], [14200, 1, false]
         ];
         let nextNoteIndex = 0;
 
-        function preload() {}
+        function preload() {
+            // Using royalty-free placeholder audio assets
+            this.load.audio('bgm', 'https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3'); 
+            this.load.audio('hit', 'https://cdn.pixabay.com/audio/2021/08/04/audio_062564fa7d.mp3');
+            this.load.audio('miss', 'https://cdn.pixabay.com/audio/2022/03/10/audio_c363945f8e.mp3');
+        }
 
         function create() {
             const scene = this;
             
+            // Initialize Sounds
+            bgm = this.sound.add('bgm', { loop: true, volume: 0.5 });
+            hitSfx = this.sound.add('hit', { volume: 0.7 });
+            missSfx = this.sound.add('miss', { volume: 0.5 });
+
             // Background Watermark Title
             this.add.text(180, 320, 'Boyan THEGAMER\nrocks!', {
                 fontSize: '32px',
                 fill: '#000',
                 fontStyle: 'bold',
                 align: 'center'
-            }).setOrigin(0.5).setAlpha(0.25).setDepth(0);
+            }).setOrigin(0.5).setAlpha(0.05).setDepth(0);
 
             // Draw visual grid
             const bg = this.add.graphics();
@@ -126,15 +144,29 @@
                 fontSize: '36px', fill: '#00aaff', fontStyle: 'bold'
             }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
+            // Start Overlay
+            const startGroup = this.add.container(0, 0).setDepth(100);
+            const overlay = this.add.rectangle(180, 320, 360, 640, 0x000000, 0.6);
+            const startBtn = this.add.text(180, 320, 'TAP TO START MUSIC', {
+                fontSize: '24px', fill: '#fff', fontStyle: 'bold', backgroundColor: '#00aaff', padding: { x: 20, y: 10 }
+            }).setOrigin(0.5).setInteractive();
+            
+            startGroup.add([overlay, startBtn]);
+
+            startBtn.on('pointerdown', () => {
+                gameStarted = true;
+                this.startTime = this.time.now;
+                bgm.play();
+                startGroup.destroy();
+            });
+
             // Input
             this.input.on('pointerdown', handleDown, this);
             this.input.on('pointerup', handleUp, this);
-
-            this.startTime = this.time.now;
         }
 
         function update(time, delta) {
-            if (isGameOver) return;
+            if (isGameOver || !gameStarted) return;
 
             const elapsedTime = time - this.startTime;
 
@@ -152,7 +184,9 @@
             // 2. Movement & Hold Logic
             tiles.getChildren().forEach(tile => {
                 const timeDiff = elapsedTime - tile.targetTime; 
-                tile.y = STRIKE_LINE_Y + (timeDiff / 1000) * SCROLL_SPEED;
+                const h = tile.displayHeight;
+                // Corrected positioning: at timeDiff = 0, the bottom of the tile hits the line
+                tile.y = STRIKE_LINE_Y + (timeDiff / 1000) * SCROLL_SPEED - (h / 2);
 
                 // Handle active holding of long tiles
                 if (tile.isLong && tile.isBeingHeld) {
@@ -168,7 +202,7 @@
                 // Auto-Miss logic
                 if (!tile.isHit && !tile.isBeingHeld) {
                     const failThreshold = tile.isLong ? (tile.targetTime + tile.duration) : tile.targetTime;
-                    if (elapsedTime > failThreshold + 250) { 
+                    if (elapsedTime > failThreshold + 200) { 
                         tile.isHit = true;
                         handleError(this, "MISS!");
                         tile.destroy();
@@ -182,7 +216,8 @@
             const h = isLong ? (duration / 1000) * SCROLL_SPEED : TILE_HEIGHT;
             
             const color = isLong ? 0x0088ff : 0x222222;
-            const rect = scene.add.rectangle(x, -h/2, LANE_WIDTH - 6, h, color);
+            // Create rectangle off-screen; update() handles position
+            const rect = scene.add.rectangle(x, -200, LANE_WIDTH - 6, h, color);
             
             rect.lane = lane;
             rect.targetTime = targetTime;
@@ -195,7 +230,7 @@
         }
 
         function handleDown(pointer) {
-            if (isGameOver) return;
+            if (isGameOver || !gameStarted) return;
             const laneClicked = Math.floor(pointer.x / LANE_WIDTH);
             let hitFound = false;
 
@@ -211,9 +246,11 @@
 
             tiles.getChildren().forEach(tile => {
                 if (tile.lane === laneClicked && !tile.isHit && !tile.isBeingHeld) {
-                    const dist = Math.abs(tile.y - STRIKE_LINE_Y);
+                    // Check head of tile against strike line
+                    const headY = tile.y + (tile.displayHeight / 2);
+                    const dist = Math.abs(headY - STRIKE_LINE_Y);
                     
-                    if (dist < 130) { 
+                    if (dist < 100) { 
                         if (tile.isLong) {
                             startHold(tile);
                         } else {
@@ -241,6 +278,7 @@
             tile.isBeingHeld = true;
             activeHoldTile = tile;
             tile.setFillStyle(0x00ccff);
+            hitSfx.play();
             showFeedback("HOLDING...", 0x00aaff);
         }
 
@@ -254,13 +292,14 @@
         function processHit(scene, tile, dist) {
             tile.isHit = true;
             tile.setFillStyle(0x00ff88);
+            hitSfx.play();
             
             combo++;
             let rating = "PERFECT";
             let points = 50;
             
-            if (dist > 40) { rating = "GREAT"; points = 30; }
-            if (dist > 80) { rating = "GOOD"; points = 10; }
+            if (dist > 30) { rating = "GREAT"; points = 30; }
+            if (dist > 70) { rating = "GOOD"; points = 10; }
 
             score += (points + (combo * 2));
             scoreText.setText(Math.floor(score));
@@ -282,6 +321,7 @@
             comboText.setText('');
             errorText.setText('LIVES: ' + (MAX_ERRORS - errors));
             showFeedback(reason, 0xff4444);
+            missSfx.play();
             scene.cameras.main.shake(100, 0.005);
 
             if (errors >= MAX_ERRORS) endGame(scene, "OUT OF LIVES");
@@ -296,6 +336,7 @@
 
         function endGame(scene, reason) {
             isGameOver = true;
+            bgm.stop();
             const group = scene.add.container(0,0).setDepth(200);
             group.add(scene.add.rectangle(180, 320, 360, 640, 0x000000, 0.85));
             group.add(scene.add.text(180, 220, 'GAME OVER', { fontSize: '42px', fill: '#ff4444', fontStyle: 'bold' }).setOrigin(0.5));
@@ -311,4 +352,3 @@
     </script>
 </body>
 </html>
-
