@@ -126,6 +126,7 @@ export default class GameScene extends Phaser.Scene {
             b.age += 1;
             // Remove after ~4 seconds (240 frames at 60fps)
             if (b.age > 240) {
+                b.flashTimer.destroy();
                 b.container.destroy();
                 return false;
             }
@@ -418,6 +419,7 @@ export default class GameScene extends Phaser.Scene {
             delay: 120,
             loop: true,
             callback: () => {
+                if (!txt || !txt.scene) return;
                 colorIdx = (colorIdx + 1) % colors.length;
                 const c = colors[colorIdx];
                 txt.setFill('#' + c.toString(16).padStart(6, '0'));
