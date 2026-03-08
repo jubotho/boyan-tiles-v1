@@ -119,9 +119,10 @@ export default class GameScene extends Phaser.Scene {
 
             tileObj.y = newY - tile.spawnY + (h / 2);
 
-            // Auto-miss
+            // Below the line = lose a life
             if (!tile.isHit) {
-                if (elapsed > tile.targetTime + 350) {
+                const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
+                if (headY > this.strikeLineY + 40) {
                     tile.isHit = true;
                     this.handleError('MISS!');
                     tileObj.destroy();
@@ -166,10 +167,11 @@ export default class GameScene extends Phaser.Scene {
 
             const timeDiff = elapsed - tile.targetTime;
             const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
-            const dist = Math.abs(headY - this.strikeLineY);
 
-            if (dist < 180) {
-                this.processHit(tileObj, dist);
+            // Only tappable if tile is above or on the line (not below)
+            if (headY <= this.strikeLineY + 20 && headY > this.strikeLineY - 200) {
+                const distAbove = this.strikeLineY - headY; // positive = above line, ~0 = on line
+                this.processHit(tileObj, distAbove);
                 hitFound = true;
             }
         });
@@ -183,12 +185,12 @@ export default class GameScene extends Phaser.Scene {
         this.combo++;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
 
+        // dist = how far above the line (0 = on line, bigger = higher above)
         let rating = 'PERFECT';
         let points = 50;
         let color = 0x00ff88;
 
-        if (dist > 50) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
-        if (dist > 120) { rating = 'GOOD'; points = 10; color = 0xffaa00; }
+        if (dist > 40) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
 
         this.score += points + this.combo * 2;
         this.scoreText.setText(Math.floor(this.score));
