@@ -1,5 +1,5 @@
 import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
-import { playHit, playMiss, playSiren, initAudio, createBGM } from '../audio.js';
+import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, playSiren, initAudio, createBGM } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
 import {
@@ -260,7 +260,6 @@ export default class GameScene extends Phaser.Scene {
     processHit(tileObj, dist) {
         const tile = tileObj.getData('tileData');
         tile.isHit = true;
-        playHit();
 
         this.combo++;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
@@ -271,6 +270,13 @@ export default class GameScene extends Phaser.Scene {
         let color = 0x00ff88;
 
         if (dist > 40) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
+
+        // Play different sound for PERFECT vs GREAT
+        if (rating === 'PERFECT') {
+            playHitPerfect();
+        } else {
+            playHit();
+        }
 
         this.score += points + this.combo * 2;
         this.scoreText.setText(Math.floor(this.score));
@@ -285,8 +291,11 @@ export default class GameScene extends Phaser.Scene {
         createNeonExplosion(this, tileX, this.strikeLineY, isPerfect);
         createHitParticles(this, tileX, this.strikeLineY, color);
 
-        // Combo milestone celebrations
+        // Combo milestone celebrations with epic sounds
         if ([10, 25, 50, 100].includes(this.combo)) {
+            const level = this.combo >= 100 ? 4 : this.combo >= 50 ? 3 : this.combo >= 25 ? 2 : 1;
+            playCombo(level);
+            playExplosion();
             createComboMilestone(this, this.combo);
         }
 

@@ -1,5 +1,7 @@
 let audioCtx;
 let currentBgm = null;
+let sfxLoaded = false;
+let phaserSound = null; // Phaser sound manager reference
 
 function getContext() {
     if (!audioCtx) {
@@ -8,6 +10,25 @@ function getContext() {
     return audioCtx;
 }
 
+// Store Phaser sound manager reference
+export function setSoundManager(soundManager) {
+    phaserSound = soundManager;
+    sfxLoaded = true;
+}
+
+// Play a random sound from a set of keys
+function playRandom(keys, volume = 0.5) {
+    if (!phaserSound || !sfxLoaded) return false;
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    try {
+        phaserSound.play(key, { volume });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Procedural fallback
 function playTone(freq, duration, type = 'sine', volume = 0.3) {
     const ctx = getContext();
     const osc = ctx.createOscillator();
@@ -23,24 +44,69 @@ function playTone(freq, duration, type = 'sine', volume = 0.3) {
 }
 
 export function playHit() {
-    playTone(880, 0.15, 'sine', 0.4);
+    if (!playRandom(['hit1', 'hit2', 'hit3'], 0.5)) {
+        playTone(880, 0.15, 'sine', 0.4);
+    }
+}
+
+export function playHitPerfect() {
+    if (!playRandom(['hit_perfect1', 'hit_perfect2', 'hit_perfect3'], 0.6)) {
+        playTone(880, 0.15, 'sine', 0.4);
+        setTimeout(() => playTone(1320, 0.1, 'sine', 0.3), 50);
+    }
 }
 
 export function playMiss() {
-    playTone(220, 0.25, 'sawtooth', 0.3);
+    if (!playRandom(['miss1', 'miss2', 'miss3'], 0.5)) {
+        playTone(220, 0.25, 'sawtooth', 0.3);
+    }
+}
+
+export function playExplosion() {
+    if (!playRandom(['explosion1', 'explosion2', 'explosion3'], 0.4)) {
+        playTone(80, 0.3, 'sawtooth', 0.2);
+    }
+}
+
+export function playCombo(level) {
+    // level 1-4 maps to combo1-combo4
+    const idx = Math.min(level, 4);
+    if (!playRandom([`combo${idx}`], 0.6)) {
+        playTone(440 + level * 220, 0.2, 'sine', 0.3);
+    }
+}
+
+export function playImpact() {
+    if (!playRandom(['impact1', 'impact2'], 0.5)) {
+        playTone(100, 0.15, 'square', 0.2);
+    }
+}
+
+export function playFanfare() {
+    if (!playRandom(['fanfare1', 'fanfare2'], 0.6)) {
+        playTone(440, 0.1, 'sine', 0.3);
+        setTimeout(() => playTone(660, 0.1, 'sine', 0.3), 100);
+        setTimeout(() => playTone(880, 0.15, 'sine', 0.3), 200);
+    }
 }
 
 export function playMenuClick() {
-    playTone(660, 0.08, 'sine', 0.2);
+    if (!playRandom(['menu_click'], 0.4)) {
+        playTone(660, 0.08, 'sine', 0.2);
+    }
 }
 
 export function playMenuStart() {
-    playTone(440, 0.1, 'sine', 0.3);
-    setTimeout(() => playTone(660, 0.1, 'sine', 0.3), 100);
-    setTimeout(() => playTone(880, 0.15, 'sine', 0.3), 200);
+    if (!playRandom(['menu_start'], 0.5)) {
+        playTone(440, 0.1, 'sine', 0.3);
+        setTimeout(() => playTone(660, 0.1, 'sine', 0.3), 100);
+        setTimeout(() => playTone(880, 0.15, 'sine', 0.3), 200);
+    }
 }
 
 export function playSiren() {
+    if (playRandom(['siren'], 0.4)) return;
+    // Procedural fallback
     const ctx = getContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -62,16 +128,34 @@ export function initAudio() {
     getContext();
 }
 
+// ========== Audio Preloader for Phaser ==========
+
+const SFX_FILES = [
+    'hit1', 'hit2', 'hit3',
+    'hit_perfect1', 'hit_perfect2', 'hit_perfect3',
+    'miss1', 'miss2', 'miss3',
+    'combo1', 'combo2', 'combo3', 'combo4',
+    'explosion1', 'explosion2', 'explosion3',
+    'impact1', 'impact2',
+    'menu_click', 'menu_move', 'menu_start',
+    'fanfare1', 'fanfare2',
+    'siren',
+];
+
+export function preloadSFX(scene) {
+    SFX_FILES.forEach(name => {
+        scene.load.audio(name, `audio/sfx/${name}.wav`);
+    });
+}
+
 // ========== Procedural BGM System ==========
 
-// Note frequencies (octave 4 and 5)
 const NOTES = {
     C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
     C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00,
     C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
 };
 
-// Song definitions with melody patterns, bass patterns, and settings
 const SONG_DEFS = {
     song1: {
         name: 'Piano Dreams',
@@ -130,7 +214,6 @@ class ProceduralBGM {
         const ctx = getContext();
         const beatMs = 60000 / this.def.bpm;
 
-        // Play one melody note per beat, one bass note every 4 beats
         const tick = () => {
             if (!this.isPlaying) return;
 
@@ -189,7 +272,6 @@ class ProceduralBGM {
             this.beatCount++;
         };
 
-        // Start immediately
         tick();
         this.intervalId = setInterval(tick, 60000 / this.def.bpm);
     }
