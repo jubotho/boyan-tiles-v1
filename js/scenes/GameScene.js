@@ -261,6 +261,9 @@ export default class GameScene extends Phaser.Scene {
         const name = names[Math.floor(Math.random() * names.length)];
         const colors = [0xff0000, 0xff6600, 0xffcc00, 0x00ff66, 0xff00ff, 0x00ccff];
 
+        // Siren when bonus appears!
+        playSiren();
+
         const x = 60 + Math.random() * (GAME_WIDTH - 120);
         const y = 80 + Math.random() * (GAME_HEIGHT - 250);
 
