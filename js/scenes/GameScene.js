@@ -193,7 +193,7 @@ export default class GameScene extends Phaser.Scene {
             // Below the line = lose a life
             if (!tile.isHit) {
                 const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
-                if (headY > this.strikeLineY + 40) {
+                if (headY > this.strikeLineY + 90) {
                     tile.isHit = true;
                     this.handleError('MISS!');
                     tileObj.destroy();
@@ -239,9 +239,10 @@ export default class GameScene extends Phaser.Scene {
             const timeDiff = elapsed - tile.targetTime;
             const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
 
-            // Only tappable if tile is above or on the line (not below)
-            if (headY <= this.strikeLineY + 20 && headY > this.strikeLineY - 200) {
-                const distAbove = this.strikeLineY - headY; // positive = above line, ~0 = on line
+            // Tappable if tile center is within range (generous window)
+            // Tile is 150px tall, so even at +60 below, tile top is still above the line
+            if (headY <= this.strikeLineY + 70 && headY > this.strikeLineY - 250) {
+                const distAbove = this.strikeLineY - headY;
                 this.processHit(tileObj, distAbove);
                 hitFound = true;
             }
