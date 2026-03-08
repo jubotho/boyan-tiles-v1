@@ -145,7 +145,7 @@ export default class GameScene extends Phaser.Scene {
             // Auto-miss
             if (!tile.isHit && !tile.isBeingHeld) {
                 const failTime = tile.isLong ? (tile.targetTime + tile.duration) : tile.targetTime;
-                if (elapsed > failTime + 200) {
+                if (elapsed > failTime + 350) {
                     tile.isHit = true;
                     this.handleError('MISS!');
                     tileObj.destroy();
@@ -195,7 +195,7 @@ export default class GameScene extends Phaser.Scene {
             const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
             const dist = Math.abs(headY - this.strikeLineY);
 
-            if (dist < 100) {
+            if (dist < 180) {
                 if (tile.isLong) {
                     this.startHold(tileObj);
                 } else {
@@ -205,7 +205,7 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        if (!hitFound) this.handleError('TAP!');
+        // Don't penalize tapping empty space — only misses from missed tiles count
     }
 
     handleUp() {
@@ -248,8 +248,8 @@ export default class GameScene extends Phaser.Scene {
         let points = 50;
         let color = 0x00ff88;
 
-        if (dist > 30) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
-        if (dist > 70) { rating = 'GOOD'; points = 10; color = 0xffaa00; }
+        if (dist > 50) { rating = 'GREAT'; points = 30; color = 0x44ccff; }
+        if (dist > 120) { rating = 'GOOD'; points = 10; color = 0xffaa00; }
 
         this.score += points + this.combo * 2;
         this.scoreText.setText(Math.floor(this.score));
