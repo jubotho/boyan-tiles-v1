@@ -10,6 +10,7 @@ import {
     createLavaTileExplosion, createLavaMissExplosion,
 } from '../effects/index.js';
 import { spawnBonusName, updateBonusNames, cleanupBonusNames } from '../managers/BonusNameManager.js';
+import { RewindManager, REWIND_SPEED_FACTOR } from '../managers/RewindManager.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -40,6 +41,8 @@ export default class GameScene extends Phaser.Scene {
         this.prevCombo = 0;
         this.level = 1;
         this.beatmapTimeOffset = 0;
+        this.gameTime = 0;
+        this.lastRealTime = 0;
     }
 
     create() {
@@ -90,10 +93,13 @@ export default class GameScene extends Phaser.Scene {
 
         startGroup.add([overlay, songTitle, startBtn]);
 
+        this.rewindManager = new RewindManager(this);
+
         startBtn.on('pointerdown', () => {
             initAudio();
             this.gameStarted = true;
             this.startTime = this.time.now;
+            this.lastRealTime = this.time.now;
             this.bgm.play();
             startGroup.destroy();
         });
@@ -104,37 +110,40 @@ export default class GameScene extends Phaser.Scene {
     update(time) {
         if (this.isGameOver || !this.gameStarted) return;
 
-        const elapsed = time - this.startTime;
+        // Time tracking
+        const realElapsed = time - this.startTime;
+        const realDelta = time - this.lastRealTime;
+        this.lastRealTime = time;
 
-        // Random dramatic events (fire columns, lightning, neon pulses)
-        if (elapsed >= this.nextDramaticEvent) {
+        // Update rewind effect
+        this.rewindManager.update(realElapsed, realDelta);
+        this.gameTime += realDelta * this.rewindManager.forwardFactor;
+        const elapsed = this.gameTime;
+        const rewindActive = this.rewindManager.isActive();
+
+        // Random dramatic events (skip during rewind)
+        if (!rewindActive && realElapsed >= this.nextDramaticEvent) {
             spawnRandomDramaticEvent(this);
-            this.nextDramaticEvent = elapsed + 2500 + Math.random() * 4000;
+            this.nextDramaticEvent = realElapsed + 2500 + Math.random() * 4000;
         }
 
         // Combo border glow
         updateComboBorderGlow(this, this.combo);
 
-        // Bonus names
-        if (elapsed >= this.nextBonusTime) {
+        // Bonus names (skip spawning during rewind)
+        if (!rewindActive && realElapsed >= this.nextBonusTime) {
             spawnBonusName(this);
-            this.nextBonusTime = elapsed + 8000 + Math.random() * 7000; // next one in 8-15s
+            this.nextBonusTime = realElapsed + 8000 + Math.random() * 7000;
         }
-
-        // Update bonus names
         updateBonusNames(this);
 
         if (this.isEndless) {
-            // Endless mode: generate tiles on the fly, speed up over time
-            // Speed increases every 10 seconds
-            const level = Math.floor(elapsed / 10000) + 5;
+            const level = Math.floor(realElapsed / 10000) + 5;
             this.scrollSpeed = 180 + (level - 1) * 25;
-            // Interval decreases (faster notes), min 250ms
             this.endlessInterval = Math.max(250, 700 - (level - 1) * 50);
             this.diffLabel.setText('LVL ' + level);
 
-            if (elapsed >= this.endlessNextTime) {
-                // Pick a random lane (avoid same lane twice in a row)
+            if (!rewindActive && realElapsed >= this.endlessNextTime) {
                 let lane;
                 do {
                     lane = Math.floor(Math.random() * 4);
@@ -143,25 +152,24 @@ export default class GameScene extends Phaser.Scene {
 
                 const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
                 this.spawnTile(lane, elapsed + leadTime);
-                this.endlessNextTime = elapsed + this.endlessInterval;
+                this.endlessNextTime = realElapsed + this.endlessInterval;
             }
         } else {
-            // Normal mode: when all notes done, LEVEL UP and loop faster
-            if (this.nextNoteIndex >= this.beatmap.length && this.tiles.getChildren().length === 0) {
+            if (!rewindActive && this.nextNoteIndex >= this.beatmap.length && this.tiles.getChildren().length === 0) {
                 this.levelUp(elapsed);
             }
 
-            // Spawn tiles from beatmap (with time offset for looping)
-            const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
-            while (this.nextNoteIndex < this.beatmap.length) {
-                const note = this.beatmap[this.nextNoteIndex];
-                const [noteTime] = note;
-                const adjustedTime = noteTime + this.beatmapTimeOffset;
-
-                if (elapsed < adjustedTime - leadTime) break;
-                const [, lane] = note;
-                this.spawnTile(lane, adjustedTime);
-                this.nextNoteIndex++;
+            if (!rewindActive) {
+                const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
+                while (this.nextNoteIndex < this.beatmap.length) {
+                    const note = this.beatmap[this.nextNoteIndex];
+                    const [noteTime] = note;
+                    const adjustedTime = noteTime + this.beatmapTimeOffset;
+                    if (elapsed < adjustedTime - leadTime) break;
+                    const [, lane] = note;
+                    this.spawnTile(lane, adjustedTime);
+                    this.nextNoteIndex++;
+                }
             }
         }
 
@@ -170,35 +178,56 @@ export default class GameScene extends Phaser.Scene {
             const tile = tileObj.getData('tileData');
             if (!tile) return;
 
-            const timeDiff = elapsed - tile.targetTime;
-            const h = tile.height;
-            const newY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed - (h / 2);
+            if (tile.isRewindTile) {
+                // Rewind tile: move upward at 60% scroll speed
+                tile.centerY -= this.scrollSpeed * REWIND_SPEED_FACTOR * this.rewindManager.reverseFactor * (realDelta / 1000);
+                tileObj.y = tile.centerY - tile.spawnY;
 
-            tileObj.y = newY - tile.spawnY + (h / 2);
+                const pulseRect = tileObj.getData('pulseRect');
+                if (pulseRect && !pulseRect.destroyed) {
+                    pulseRect.y = tile.centerY;
+                }
 
-            // Move pulse rect with tile
-            const pulseRect = tileObj.getData('pulseRect');
-            if (pulseRect && !pulseRect.destroyed) {
-                pulseRect.y = tileObj.y + tile.spawnY;
-            }
-
-            // Combo fire aura on tiles
-            if (!tile.isHit) {
-                updateComboFireAura(this, tileObj, this.combo);
-                // Fire trail behind falling tiles
-                const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
-                createFireTrail(this, tx, tileObj.y + tile.height / 2, this.combo);
-            }
-
-            // Below the line = lose a life
-            if (!tile.isHit) {
-                const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
-                if (headY > this.strikeLineY + AUTO_MISS_THRESHOLD) {
-                    tile.isHit = true;
+                if (!tile.isHit) {
+                    updateComboFireAura(this, tileObj, this.combo);
                     const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
-                    createLavaMissExplosion(this, tx, this.strikeLineY + 30, tile.lane);
+                    createFireTrail(this, tx, tile.centerY - tile.height / 2, this.combo);
+                }
+
+                // Auto-miss: off top of screen
+                if (!tile.isHit && tile.centerY < -tile.height) {
+                    tile.isHit = true;
                     this.handleError('MISS!');
                     tileObj.destroy();
+                }
+            } else {
+                // Normal tile: time-based positioning
+                const timeDiff = elapsed - tile.targetTime;
+                const h = tile.height;
+                const newY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed - (h / 2);
+
+                tileObj.y = newY - tile.spawnY + (h / 2);
+
+                const pulseRect = tileObj.getData('pulseRect');
+                if (pulseRect && !pulseRect.destroyed) {
+                    pulseRect.y = tileObj.y + tile.spawnY;
+                }
+
+                if (!tile.isHit) {
+                    updateComboFireAura(this, tileObj, this.combo);
+                    const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+                    createFireTrail(this, tx, tileObj.y + tile.height / 2, this.combo);
+                }
+
+                if (!tile.isHit) {
+                    const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
+                    if (headY > this.strikeLineY + AUTO_MISS_THRESHOLD) {
+                        tile.isHit = true;
+                        const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+                        createLavaMissExplosion(this, tx, this.strikeLineY + 30, tile.lane);
+                        this.handleError('MISS!');
+                        tileObj.destroy();
+                    }
                 }
             }
         });
@@ -223,6 +252,27 @@ export default class GameScene extends Phaser.Scene {
         this.tiles.add(gfx);
     }
 
+    spawnRewindTile(lane) {
+        const x = lane * LANE_WIDTH + (LANE_WIDTH / 2);
+        const h = TILE_HEIGHT;
+        const centerY = GAME_HEIGHT + h;
+
+        const gfx = createGradientTile(this, x, centerY, LANE_WIDTH - 6, h, lane);
+        gfx.setDepth(5);
+
+        gfx.setData('tileData', {
+            lane,
+            targetTime: 0,
+            isHit: false,
+            height: h,
+            spawnY: centerY,
+            isRewindTile: true,
+            centerY: centerY,
+        });
+
+        this.tiles.add(gfx);
+    }
+
     handleDown(pointer) {
         if (this.isGameOver || !this.gameStarted) return;
 
@@ -231,21 +281,32 @@ export default class GameScene extends Phaser.Scene {
 
         createRipple(this, pointer.x, pointer.y);
 
-        const elapsed = this.time.now - this.startTime;
+        const elapsed = this.gameTime;
 
         this.tiles.getChildren().forEach(tileObj => {
             if (hitFound) return;
             const tile = tileObj.getData('tileData');
             if (!tile || tile.lane !== laneClicked || tile.isHit) return;
 
-            const timeDiff = elapsed - tile.targetTime;
-            const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
+            // During REVERSING, skip normal tiles (only rewind tiles tappable)
+            if (!tile.isRewindTile && this.rewindManager.isReversing()) return;
 
-            // Tappable if tile is on screen (above strike line + small below margin)
-            if (headY <= this.strikeLineY + HIT_WINDOW_BELOW && headY > 0) {
-                const distAbove = this.strikeLineY - headY;
-                this.processHit(tileObj, distAbove);
-                hitFound = true;
+            if (tile.isRewindTile) {
+                const hitY = tile.centerY;
+                if (hitY <= this.strikeLineY + HIT_WINDOW_BELOW && hitY > 0) {
+                    const dist = Math.abs(this.strikeLineY - hitY);
+                    this.processHit(tileObj, dist);
+                    hitFound = true;
+                }
+            } else {
+                const timeDiff = elapsed - tile.targetTime;
+                const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
+
+                if (headY <= this.strikeLineY + HIT_WINDOW_BELOW && headY > 0) {
+                    const distAbove = this.strikeLineY - headY;
+                    this.processHit(tileObj, distAbove);
+                    hitFound = true;
+                }
             }
         });
 
@@ -393,6 +454,7 @@ export default class GameScene extends Phaser.Scene {
     endGame(reason) {
         this.isGameOver = true;
         this.bgm.stop();
+        if (this.rewindManager) this.rewindManager.cleanup();
         cleanupBonusNames(this.bonusNames);
 
         const isNewRecord = setHighScore(this.songId, this.difficulty, this.score);

@@ -187,6 +187,10 @@ class FileBGM {
         this.songId = songId;
         this.key = `music_${songId}`;
         this.sound = null;
+        this.reversedBuffer = null;
+        this.reverseSource = null;
+        this.reverseGain = null;
+        this.audioCtx = null;
     }
 
     play() {
@@ -194,12 +198,92 @@ class FileBGM {
         try {
             this.sound = phaserSound.add(this.key, { loop: true, volume: 0.8 });
             this.sound.play();
-        } catch (e) {
-            // Silent fail — no music but game still works
+            this._prepareReversedBuffer();
+        } catch (e) {}
+    }
+
+    _prepareReversedBuffer() {
+        try {
+            if (!phaserSound || !phaserSound.context) return;
+            this.audioCtx = phaserSound.context;
+            const buffer = phaserSound.game.cache.audio.get(this.key);
+            if (!buffer) return;
+            this.reversedBuffer = this.audioCtx.createBuffer(
+                buffer.numberOfChannels, buffer.length, buffer.sampleRate
+            );
+            for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+                const src = buffer.getChannelData(ch);
+                const dst = this.reversedBuffer.getChannelData(ch);
+                for (let i = 0; i < src.length; i++) {
+                    dst[i] = src[src.length - 1 - i];
+                }
+            }
+        } catch (e) {}
+    }
+
+    getPosition() {
+        if (this.sound && this.sound.isPlaying) return this.sound.seek;
+        return 0;
+    }
+
+    setRate(rate) {
+        if (this.sound) {
+            try { this.sound.setRate(Math.max(0.01, rate)); } catch (e) {}
+        }
+    }
+
+    pauseForRewind() {
+        if (this.sound) {
+            try { this.sound.pause(); } catch (e) {}
+        }
+    }
+
+    startReverse(forwardPosition) {
+        if (!this.reversedBuffer || !this.audioCtx) return;
+        try {
+            const dur = this.reversedBuffer.duration;
+            const reversePos = Math.max(0, dur - (forwardPosition % dur));
+            this.reverseGain = this.audioCtx.createGain();
+            this.reverseGain.gain.value = 0.8;
+            this.reverseGain.connect(this.audioCtx.destination);
+            this.reverseSource = this.audioCtx.createBufferSource();
+            this.reverseSource.buffer = this.reversedBuffer;
+            this.reverseSource.connect(this.reverseGain);
+            this.reverseSource.start(0, reversePos);
+        } catch (e) {}
+    }
+
+    setReverseRate(rate) {
+        if (this.reverseSource) {
+            try { this.reverseSource.playbackRate.value = Math.max(0.01, rate); } catch (e) {}
+        }
+    }
+
+    stopReverse() {
+        try {
+            if (this.reverseSource) {
+                this.reverseSource.stop();
+                this.reverseSource.disconnect();
+                this.reverseSource = null;
+            }
+            if (this.reverseGain) {
+                this.reverseGain.disconnect();
+                this.reverseGain = null;
+            }
+        } catch (e) {}
+    }
+
+    resumeForward() {
+        if (this.sound) {
+            try {
+                this.sound.resume();
+                this.sound.setRate(0.05);
+            } catch (e) {}
         }
     }
 
     stop() {
+        this.stopReverse();
         if (this.sound) {
             this.sound.stop();
             this.sound.destroy();
