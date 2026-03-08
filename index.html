@@ -76,9 +76,9 @@
         // Beatmap: [timestamp_ms, lane_index, isLong, duration_ms]
         const beatmap = [
             [1000, 0, false], [1500, 2, false], [2000, 1, false], [2500, 3, false],
-            [3000, 0, true, 1200], // Long tile
+            [3000, 0, true, 1200], 
             [4500, 2, false], [5000, 1, false], 
-            [5500, 3, true, 1500], // Long tile
+            [5500, 3, true, 1500], 
             [7500, 0, false], [8000, 1, false], [8500, 2, false], [9000, 3, false],
             [9500, 0, false], [9800, 1, false], [10100, 2, false], [10400, 3, false],
             [11000, 1, true, 2000]
@@ -90,6 +90,14 @@
         function create() {
             const scene = this;
             
+            // Background Watermark Title
+            this.add.text(180, 320, 'Boyan THEGAMER\nrocks!', {
+                fontSize: '32px',
+                fill: '#000',
+                fontStyle: 'bold',
+                align: 'center'
+            }).setOrigin(0.5).setAlpha(0.05).setDepth(0);
+
             // Draw visual grid
             const bg = this.add.graphics();
             bg.lineStyle(1, 0xf0f0f0);
@@ -149,12 +157,10 @@
                 // Handle active holding of long tiles
                 if (tile.isLong && tile.isBeingHeld) {
                     if (elapsedTime > tile.targetTime + tile.duration) {
-                        // Successfully held to the end
                         completeHold(this, tile);
                     } else {
-                        // Visual feedback while holding
                         tile.setAlpha(0.6 + Math.sin(time/50) * 0.2);
-                        score += 1; // Small ticking score for holding
+                        score += 0.5; 
                         scoreText.setText(Math.floor(score));
                     }
                 }
@@ -162,7 +168,7 @@
                 // Auto-Miss logic
                 if (!tile.isHit && !tile.isBeingHeld) {
                     const failThreshold = tile.isLong ? (tile.targetTime + tile.duration) : tile.targetTime;
-                    if (elapsedTime > failThreshold + 250) { // 250ms grace period
+                    if (elapsedTime > failThreshold + 250) { 
                         tile.isHit = true;
                         handleError(this, "MISS!");
                         tile.destroy();
@@ -176,7 +182,7 @@
             const h = isLong ? (duration / 1000) * SCROLL_SPEED : TILE_HEIGHT;
             
             const color = isLong ? 0x0088ff : 0x222222;
-            const rect = scene.add.rectangle(x, -h, LANE_WIDTH - 6, h, color);
+            const rect = scene.add.rectangle(x, -h/2, LANE_WIDTH - 6, h, color);
             
             rect.lane = lane;
             rect.targetTime = targetTime;
@@ -223,7 +229,6 @@
 
         function handleUp() {
             if (activeHoldTile) {
-                // If they let go before the duration is finished
                 handleError(this, "RELEASED!");
                 activeHoldTile.isBeingHeld = false;
                 activeHoldTile.isHit = true;
@@ -243,7 +248,7 @@
             tile.isBeingHeld = false;
             tile.isHit = true;
             activeHoldTile = null;
-            processHit(scene, tile, 0); // Count as perfect
+            processHit(scene, tile, 0); 
         }
 
         function processHit(scene, tile, dist) {
@@ -265,7 +270,7 @@
             scene.tweens.add({
                 targets: tile,
                 alpha: 0,
-                y: '+=20',
+                scale: 1.1,
                 duration: 200,
                 onComplete: () => tile.destroy()
             });
