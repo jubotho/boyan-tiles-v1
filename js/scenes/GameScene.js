@@ -116,7 +116,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.isEndless) {
             // Endless mode: generate tiles on the fly, speed up over time
             // Speed increases every 10 seconds
-            const level = Math.floor(elapsed / 10000) + 1;
+            const level = Math.floor(elapsed / 10000) + 5;
             this.scrollSpeed = 280 + (level - 1) * 40;
             // Interval decreases (faster notes), min 250ms
             this.endlessInterval = Math.max(250, 700 - (level - 1) * 50);
