@@ -44,68 +44,68 @@ function playTone(freq, duration, type = 'sine', volume = 0.3) {
 }
 
 export function playHit() {
-    if (!playRandom(['hit1', 'hit2', 'hit3'], 0.5)) {
-        playTone(880, 0.15, 'sine', 0.4);
+    if (!playRandom(['hit1', 'hit2', 'hit3'], 0.2)) {
+        playTone(880, 0.15, 'sine', 0.15);
     }
 }
 
 export function playHitPerfect() {
-    if (!playRandom(['hit_perfect1', 'hit_perfect2', 'hit_perfect3'], 0.6)) {
-        playTone(880, 0.15, 'sine', 0.4);
-        setTimeout(() => playTone(1320, 0.1, 'sine', 0.3), 50);
+    if (!playRandom(['hit_perfect1', 'hit_perfect2', 'hit_perfect3'], 0.25)) {
+        playTone(880, 0.15, 'sine', 0.15);
+        setTimeout(() => playTone(1320, 0.1, 'sine', 0.1), 50);
     }
 }
 
 export function playMiss() {
-    if (!playRandom(['miss1', 'miss2', 'miss3'], 0.5)) {
-        playTone(220, 0.25, 'sawtooth', 0.3);
+    if (!playRandom(['miss1', 'miss2', 'miss3'], 0.2)) {
+        playTone(220, 0.25, 'sawtooth', 0.1);
     }
 }
 
 export function playExplosion() {
-    if (!playRandom(['explosion1', 'explosion2', 'explosion3'], 0.4)) {
-        playTone(80, 0.3, 'sawtooth', 0.2);
+    if (!playRandom(['explosion1', 'explosion2', 'explosion3'], 0.15)) {
+        playTone(80, 0.3, 'sawtooth', 0.08);
     }
 }
 
 export function playCombo(level) {
     // level 1-4 maps to combo1-combo4
     const idx = Math.min(level, 4);
-    if (!playRandom([`combo${idx}`], 0.6)) {
-        playTone(440 + level * 220, 0.2, 'sine', 0.3);
+    if (!playRandom([`combo${idx}`], 0.25)) {
+        playTone(440 + level * 220, 0.2, 'sine', 0.1);
     }
 }
 
 export function playImpact() {
-    if (!playRandom(['impact1', 'impact2'], 0.5)) {
-        playTone(100, 0.15, 'square', 0.2);
+    if (!playRandom(['impact1', 'impact2'], 0.2)) {
+        playTone(100, 0.15, 'square', 0.08);
     }
 }
 
 export function playFanfare() {
-    if (!playRandom(['fanfare1', 'fanfare2'], 0.6)) {
-        playTone(440, 0.1, 'sine', 0.3);
-        setTimeout(() => playTone(660, 0.1, 'sine', 0.3), 100);
-        setTimeout(() => playTone(880, 0.15, 'sine', 0.3), 200);
+    if (!playRandom(['fanfare1', 'fanfare2'], 0.3)) {
+        playTone(440, 0.1, 'sine', 0.12);
+        setTimeout(() => playTone(660, 0.1, 'sine', 0.12), 100);
+        setTimeout(() => playTone(880, 0.15, 'sine', 0.12), 200);
     }
 }
 
 export function playMenuClick() {
-    if (!playRandom(['menu_click'], 0.4)) {
-        playTone(660, 0.08, 'sine', 0.2);
+    if (!playRandom(['menu_click'], 0.2)) {
+        playTone(660, 0.08, 'sine', 0.1);
     }
 }
 
 export function playMenuStart() {
-    if (!playRandom(['menu_start'], 0.5)) {
-        playTone(440, 0.1, 'sine', 0.3);
-        setTimeout(() => playTone(660, 0.1, 'sine', 0.3), 100);
-        setTimeout(() => playTone(880, 0.15, 'sine', 0.3), 200);
+    if (!playRandom(['menu_start'], 0.25)) {
+        playTone(440, 0.1, 'sine', 0.12);
+        setTimeout(() => playTone(660, 0.1, 'sine', 0.12), 100);
+        setTimeout(() => playTone(880, 0.15, 'sine', 0.12), 200);
     }
 }
 
 export function playSiren() {
-    if (playRandom(['siren'], 0.4)) return;
+    if (playRandom(['siren'], 0.2)) return;
     // Procedural fallback
     const ctx = getContext();
     const osc = ctx.createOscillator();
@@ -116,7 +116,7 @@ export function playSiren() {
     osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.3);
     osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.45);
     osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.6);
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -160,7 +160,7 @@ class FileBGM {
     play() {
         if (!phaserSound) return;
         try {
-            this.sound = phaserSound.add(this.key, { loop: true, volume: 0.5 });
+            this.sound = phaserSound.add(this.key, { loop: true, volume: 0.8 });
             this.sound.play();
         } catch (e) {
             // Silent fail — no music but game still works
