@@ -11,9 +11,13 @@ const config = {
     height: GAME_HEIGHT,
     backgroundColor: '#0a0a12',
     transparent: false,
+    resolution: window.devicePixelRatio || 1,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    render: {
+        antialias: true,
     },
     scene: [BootScene, MenuScene, GameScene, GameOverScene],
 };
