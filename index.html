@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Tiles 3 Clone - Phaser 3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 900px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            background: #fff;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <script>
+        const config = {
+            type: Phaser.CANVAS,
+            parent: 'game-container',
+            width: 360,
+            height: 640,
+            backgroundColor: '#ffffff',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+
+        // Constants
+        const LANES = 4;
+        const LANE_WIDTH = 360 / LANES;
+        const STRIKE_LINE_Y = 520; 
+        const TILE_HEIGHT = 150; 
+        const SCROLL_SPEED = 480; 
+        const MAX_ERRORS = 10; 
+
+        // State
+        let score = 0;
+        let combo = 0;
+        let errors = 0;
+        let isGameOver = false;
+        let tiles;
+        let scoreText;
+        let errorText;
+        let feedbackText;
+        let comboText;
+        let activeHoldTile = null;
+
+        // Beatmap: [timestamp_ms, lane_index, isLong, duration_ms]
+        const beatmap = [
+            [1000, 0, false], [1500, 2, false], [2000, 1, false], [2500, 3, false],
+            [3000, 0, true, 1200], // Long tile
+            [4500, 2, false], [5000, 1, false], 
+            [5500, 3, true, 1500], // Long tile
+            [7500, 0, false], [8000, 1, false], [8500, 2, false], [9000, 3, false],
+            [9500, 0, false], [9800, 1, false], [10100, 2, false], [10400, 3, false],
+            [11000, 1, true, 2000]
+        ];
+        let nextNoteIndex = 0;
+
+        function preload() {}
+
+        function create() {
+            const scene = this;
+            
+            // Draw visual grid
+            const bg = this.add.graphics();
+            bg.lineStyle(1, 0xf0f0f0);
+            for (let i = 1; i < LANES; i++) {
+                bg.lineBetween(i * LANE_WIDTH, 0, i * LANE_WIDTH, 640);
+            }
+            bg.lineStyle(2, 0x00aaff, 0.2);
+            bg.lineBetween(0, STRIKE_LINE_Y, 360, STRIKE_LINE_Y);
+
+            tiles = this.add.group();
+
+            // UI
+            scoreText = this.add.text(180, 60, '0', { 
+                fontSize: '72px', fill: '#222', fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(10);
+
+            comboText = this.add.text(180, 120, '', { 
+                fontSize: '24px', fill: '#00aaff', fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(10);
+
+            errorText = this.add.text(20, 20, 'LIVES: ' + (MAX_ERRORS - errors), {
+                fontSize: '16px', fill: '#ff4444', fontStyle: 'bold'
+            }).setDepth(10);
+
+            feedbackText = this.add.text(180, 280, '', {
+                fontSize: '36px', fill: '#00aaff', fontStyle: 'bold'
+            }).setOrigin(0.5).setAlpha(0).setDepth(10);
+
+            // Input
+            this.input.on('pointerdown', handleDown, this);
+            this.input.on('pointerup', handleUp, this);
+
+            this.startTime = this.time.now;
+        }
+
+        function update(time, delta) {
+            if (isGameOver) return;
+
+            const elapsedTime = time - this.startTime;
+
+            // 1. Spawning
+            if (nextNoteIndex < beatmap.length) {
+                const [noteTime, lane, isLong, duration] = beatmap[nextNoteIndex];
+                const leadTime = (STRIKE_LINE_Y / SCROLL_SPEED) * 1000;
+                
+                if (elapsedTime >= (noteTime - leadTime)) {
+                    spawnTile(this, lane, isLong, duration, noteTime);
+                    nextNoteIndex++;
+                }
+            }
+
+            // 2. Movement & Hold Logic
+            tiles.getChildren().forEach(tile => {
+                const timeDiff = elapsedTime - tile.targetTime; 
+                tile.y = STRIKE_LINE_Y + (timeDiff / 1000) * SCROLL_SPEED;
+
+                // Handle active holding of long tiles
+                if (tile.isLong && tile.isBeingHeld) {
+                    if (elapsedTime > tile.targetTime + tile.duration) {
+                        // Successfully held to the end
+                        completeHold(this, tile);
+                    } else {
+                        // Visual feedback while holding
+                        tile.setAlpha(0.6 + Math.sin(time/50) * 0.2);
+                        score += 1; // Small ticking score for holding
+                        scoreText.setText(Math.floor(score));
+                    }
+                }
+
+                // Auto-Miss logic
+                if (!tile.isHit && !tile.isBeingHeld) {
+                    const failThreshold = tile.isLong ? (tile.targetTime + tile.duration) : tile.targetTime;
+                    if (elapsedTime > failThreshold + 250) { // 250ms grace period
+                        tile.isHit = true;
+                        handleError(this, "MISS!");
+                        tile.destroy();
+                    }
+                }
+            });
+        }
+
+        function spawnTile(scene, lane, isLong, duration = 0, targetTime) {
+            const x = lane * LANE_WIDTH + (LANE_WIDTH / 2);
+            const h = isLong ? (duration / 1000) * SCROLL_SPEED : TILE_HEIGHT;
+            
+            const color = isLong ? 0x0088ff : 0x222222;
+            const rect = scene.add.rectangle(x, -h, LANE_WIDTH - 6, h, color);
+            
+            rect.lane = lane;
+            rect.targetTime = targetTime;
+            rect.isLong = isLong;
+            rect.duration = duration;
+            rect.isHit = false;
+            rect.isBeingHeld = false;
+
+            tiles.add(rect);
+        }
+
+        function handleDown(pointer) {
+            if (isGameOver) return;
+            const laneClicked = Math.floor(pointer.x / LANE_WIDTH);
+            let hitFound = false;
+
+            // Visual tap effect
+            const ripple = this.add.circle(pointer.x, pointer.y, 2, 0x00aaff, 0.4);
+            this.tweens.add({
+                targets: ripple,
+                radius: 40,
+                alpha: 0,
+                duration: 250,
+                onComplete: () => ripple.destroy()
+            });
+
+            tiles.getChildren().forEach(tile => {
+                if (tile.lane === laneClicked && !tile.isHit && !tile.isBeingHeld) {
+                    const dist = Math.abs(tile.y - STRIKE_LINE_Y);
+                    
+                    if (dist < 130) { 
+                        if (tile.isLong) {
+                            startHold(tile);
+                        } else {
+                            processHit(this, tile, dist);
+                        }
+                        hitFound = true;
+                    }
+                }
+            });
+
+            if (!hitFound) handleError(this, "TAP!");
+        }
+
+        function handleUp() {
+            if (activeHoldTile) {
+                // If they let go before the duration is finished
+                handleError(this, "RELEASED!");
+                activeHoldTile.isBeingHeld = false;
+                activeHoldTile.isHit = true;
+                activeHoldTile.setFillStyle(0xff4444);
+                activeHoldTile = null;
+            }
+        }
+
+        function startHold(tile) {
+            tile.isBeingHeld = true;
+            activeHoldTile = tile;
+            tile.setFillStyle(0x00ccff);
+            showFeedback("HOLDING...", 0x00aaff);
+        }
+
+        function completeHold(scene, tile) {
+            tile.isBeingHeld = false;
+            tile.isHit = true;
+            activeHoldTile = null;
+            processHit(scene, tile, 0); // Count as perfect
+        }
+
+        function processHit(scene, tile, dist) {
+            tile.isHit = true;
+            tile.setFillStyle(0x00ff88);
+            
+            combo++;
+            let rating = "PERFECT";
+            let points = 50;
+            
+            if (dist > 40) { rating = "GREAT"; points = 30; }
+            if (dist > 80) { rating = "GOOD"; points = 10; }
+
+            score += (points + (combo * 2));
+            scoreText.setText(Math.floor(score));
+            comboText.setText(combo > 1 ? combo + ' COMBO' : '');
+            showFeedback(rating, 0x00ff88);
+            
+            scene.tweens.add({
+                targets: tile,
+                alpha: 0,
+                y: '+=20',
+                duration: 200,
+                onComplete: () => tile.destroy()
+            });
+        }
+
+        function handleError(scene, reason) {
+            errors++;
+            combo = 0;
+            comboText.setText('');
+            errorText.setText('LIVES: ' + (MAX_ERRORS - errors));
+            showFeedback(reason, 0xff4444);
+            scene.cameras.main.shake(100, 0.005);
+
+            if (errors >= MAX_ERRORS) endGame(scene, "OUT OF LIVES");
+        }
+
+        function showFeedback(text, color) {
+            feedbackText.setText(text).setFill('#' + color.toString(16).padStart(6, '0')).setAlpha(1).y = 280;
+            game.scene.scenes[0].tweens.add({
+                targets: feedbackText, alpha: 0, y: 250, duration: 500
+            });
+        }
+
+        function endGame(scene, reason) {
+            isGameOver = true;
+            const group = scene.add.container(0,0).setDepth(200);
+            group.add(scene.add.rectangle(180, 320, 360, 640, 0x000000, 0.85));
+            group.add(scene.add.text(180, 220, 'GAME OVER', { fontSize: '42px', fill: '#ff4444', fontStyle: 'bold' }).setOrigin(0.5));
+            group.add(scene.add.text(180, 280, reason, { fontSize: '20px', fill: '#fff' }).setOrigin(0.5));
+            group.add(scene.add.text(180, 350, 'FINAL SCORE: ' + Math.floor(score), { fontSize: '28px', fill: '#fff' }).setOrigin(0.5));
+            
+            const btn = scene.add.rectangle(180, 460, 220, 60, 0x00aaff).setInteractive();
+            group.add(btn);
+            group.add(scene.add.text(180, 460, 'PLAY AGAIN', { fontSize: '24px', fill: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
+
+            btn.on('pointerdown', () => location.reload());
+        }
+    </script>
+</body>
+</html>
