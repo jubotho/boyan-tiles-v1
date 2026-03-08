@@ -2,7 +2,12 @@ import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, 
 import { playHit, playMiss, playSiren, initAudio, createBGM } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
-import { createGradientTile, createHitParticles, createFireExplosion, createFireTextures, updateComboFireAura, createMissFlash, createRipple, createAnimatedBackground } from '../effects.js';
+import {
+    createGradientTile, createHitParticles, createFireExplosion, createNeonExplosion,
+    createFireTextures, updateComboFireAura, createMissFlash, createRipple,
+    createAnimatedBackground, createComboMilestone, spawnRandomDramaticEvent,
+    createFireTrail, updateComboBorderGlow, createNeonPulseWave,
+} from '../effects.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -29,6 +34,8 @@ export default class GameScene extends Phaser.Scene {
         this.endlessNextTime = 1500;
         this.endlessInterval = 700; // ms between notes, decreases over time
         this.endlessLastLane = -1;
+        this.nextDramaticEvent = 3000 + Math.random() * 4000;
+        this.prevCombo = 0;
     }
 
     create() {
@@ -94,6 +101,15 @@ export default class GameScene extends Phaser.Scene {
         if (this.isGameOver || !this.gameStarted) return;
 
         const elapsed = time - this.startTime;
+
+        // Random dramatic events (fire columns, lightning, neon pulses)
+        if (elapsed >= this.nextDramaticEvent) {
+            spawnRandomDramaticEvent(this);
+            this.nextDramaticEvent = elapsed + 2500 + Math.random() * 4000;
+        }
+
+        // Combo border glow
+        updateComboBorderGlow(this, this.combo);
 
         // Bonus names
         if (elapsed >= this.nextBonusTime) {
@@ -169,6 +185,9 @@ export default class GameScene extends Phaser.Scene {
             // Combo fire aura on tiles
             if (!tile.isHit) {
                 updateComboFireAura(this, tileObj, this.combo);
+                // Fire trail behind falling tiles
+                const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+                createFireTrail(this, tx, tileObj.y + tile.height / 2, this.combo);
             }
 
             // Below the line = lose a life
@@ -254,13 +273,25 @@ export default class GameScene extends Phaser.Scene {
         const tileX = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
         const isPerfect = rating === 'PERFECT';
 
-        // FIRE EXPLOSION!
+        // FIRE + NEON EXPLOSION!
         createFireExplosion(this, tileX, this.strikeLineY, isPerfect);
+        createNeonExplosion(this, tileX, this.strikeLineY, isPerfect);
         createHitParticles(this, tileX, this.strikeLineY, color);
 
-        // Camera punch on perfect
+        // Combo milestone celebrations
+        if ([10, 25, 50, 100].includes(this.combo)) {
+            createComboMilestone(this, this.combo);
+        }
+
+        // Neon pulse wave every 5 combos
+        if (this.combo > 0 && this.combo % 5 === 0 && this.combo < 10) {
+            createNeonPulseWave(this, this.strikeLineY);
+        }
+
+        // Camera punch on perfect (stronger at higher combo)
         if (isPerfect) {
-            this.cameras.main.shake(80, 0.003);
+            const shakeIntensity = 0.003 + Math.min(this.combo / 200, 0.005);
+            this.cameras.main.shake(80, shakeIntensity);
         }
 
         this.tweens.add({
