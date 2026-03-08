@@ -1,4 +1,4 @@
-import { LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
+import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
 import { playHit, playMiss, playSiren, initAudio, createBGM } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
@@ -205,7 +205,7 @@ export default class GameScene extends Phaser.Scene {
     handleDown(pointer) {
         if (this.isGameOver || !this.gameStarted) return;
 
-        const laneClicked = Math.floor(pointer.x / LANE_WIDTH);
+        const laneClicked = Phaser.Math.Clamp(Math.floor(pointer.x / LANE_WIDTH), 0, LANES - 1);
         let hitFound = false;
 
         createRipple(this, pointer.x, pointer.y);
