@@ -2,7 +2,7 @@ import { LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, 
 import { playHit, playMiss, playSiren, initAudio, createBGM } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
-import { createGradientTile, createHitParticles, createMissFlash, createRipple, createAnimatedBackground } from '../effects.js';
+import { createGradientTile, createHitParticles, createFireExplosion, createFireTextures, updateComboFireAura, createMissFlash, createRipple, createAnimatedBackground } from '../effects.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -32,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        createFireTextures(this);
         this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0xffffff);
         createAnimatedBackground(this);
 
@@ -166,6 +167,11 @@ export default class GameScene extends Phaser.Scene {
 
             tileObj.y = newY - tile.spawnY + (h / 2);
 
+            // Combo fire aura on tiles
+            if (!tile.isHit) {
+                updateComboFireAura(this, tileObj, this.combo);
+            }
+
             // Below the line = lose a life
             if (!tile.isHit) {
                 const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
@@ -247,14 +253,23 @@ export default class GameScene extends Phaser.Scene {
         this.showFeedback(rating, color);
 
         const tileX = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+        const isPerfect = rating === 'PERFECT';
+
+        // FIRE EXPLOSION!
+        createFireExplosion(this, tileX, this.strikeLineY, isPerfect);
         createHitParticles(this, tileX, this.strikeLineY, color);
+
+        // Camera punch on perfect
+        if (isPerfect) {
+            this.cameras.main.shake(80, 0.003);
+        }
 
         this.tweens.add({
             targets: tileObj,
             alpha: 0,
-            scaleX: 1.1,
-            scaleY: 1.1,
-            duration: 200,
+            scaleX: 1.2,
+            scaleY: 1.2,
+            duration: 150,
             onComplete: () => tileObj.destroy(),
         });
     }
