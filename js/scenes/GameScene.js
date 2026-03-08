@@ -175,6 +175,8 @@ export default class GameScene extends Phaser.Scene {
                 hitFound = true;
             }
         });
+
+        if (!hitFound) this.handleError('TAP!');
     }
 
     processHit(tileObj, dist) {
