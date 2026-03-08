@@ -1,5 +1,5 @@
 import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
-import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, playSiren, initAudio, createBGM } from '../audio.js';
+import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, playSiren, initAudio, createBGM, playAnnouncerCombo, playAnnouncerLevelUp } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
 import {
@@ -37,6 +37,8 @@ export default class GameScene extends Phaser.Scene {
         this.endlessLastLane = -1;
         this.nextDramaticEvent = 3000 + Math.random() * 4000;
         this.prevCombo = 0;
+        this.level = 1;
+        this.beatmapTimeOffset = 0;
     }
 
     create() {
@@ -152,21 +154,21 @@ export default class GameScene extends Phaser.Scene {
                 this.endlessNextTime = elapsed + this.endlessInterval;
             }
         } else {
-            // Normal mode: song complete check
+            // Normal mode: when all notes done, LEVEL UP and loop faster
             if (this.nextNoteIndex >= this.beatmap.length && this.tiles.getChildren().length === 0) {
-                this.endGame('SONG COMPLETE!');
-                return;
+                this.levelUp(elapsed);
             }
 
-            // Spawn tiles from beatmap
+            // Spawn tiles from beatmap (with time offset for looping)
             if (this.nextNoteIndex < this.beatmap.length) {
                 const note = this.beatmap[this.nextNoteIndex];
                 const [noteTime] = note;
+                const adjustedTime = noteTime + this.beatmapTimeOffset;
                 const leadTime = (this.strikeLineY / this.scrollSpeed) * 1000;
 
-                if (elapsed >= noteTime - leadTime) {
+                if (elapsed >= adjustedTime - leadTime) {
                     const [, lane] = note;
-                    this.spawnTile(lane, noteTime);
+                    this.spawnTile(lane, adjustedTime);
                     this.nextNoteIndex++;
                 }
             }
@@ -295,11 +297,12 @@ export default class GameScene extends Phaser.Scene {
         createNeonExplosion(this, tileX, this.strikeLineY, isPerfect);
         createHitParticles(this, tileX, this.strikeLineY, color);
 
-        // Combo milestone celebrations with epic sounds
+        // Combo milestone celebrations with epic sounds + announcer
         if ([10, 25, 50, 100].includes(this.combo)) {
             const level = this.combo >= 100 ? 4 : this.combo >= 50 ? 3 : this.combo >= 25 ? 2 : 1;
             playCombo(level);
             playExplosion();
+            playAnnouncerCombo(this.combo);
             createComboMilestone(this, this.combo);
         }
 
@@ -484,6 +487,56 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.bonusNames.push(bonusData);
+    }
+
+    levelUp(elapsed) {
+        this.level++;
+        // Speed up 15% each level
+        this.scrollSpeed = DIFFICULTY[this.difficulty].scrollSpeed * (1 + (this.level - 1) * 0.15);
+
+        // Calculate offset: last note time + 2s gap
+        const lastNote = this.beatmap[this.beatmap.length - 1];
+        const lastNoteTime = lastNote[0];
+        this.beatmapTimeOffset = elapsed + 1500; // 1.5s gap before next loop starts
+        this.nextNoteIndex = 0;
+
+        // Update UI
+        this.diffLabel.setText('LVL ' + this.level);
+
+        // Show LEVEL COMPLETE announcement
+        const cx = GAME_WIDTH / 2;
+        const cy = GAME_HEIGHT / 2;
+
+        const lvlText = this.add.text(cx, cy - 30, 'LEVEL COMPLETE!', {
+            fontSize: '32px', fill: '#00ff88', fontStyle: 'bold',
+            stroke: '#000', strokeThickness: 6,
+        }).setOrigin(0.5).setDepth(50);
+
+        const speedText = this.add.text(cx, cy + 15, `SPEED UP! LVL ${this.level}`, {
+            fontSize: '22px', fill: '#ffaa00', fontStyle: 'bold',
+            stroke: '#000', strokeThickness: 4,
+        }).setOrigin(0.5).setDepth(50);
+
+        // Animate out
+        this.tweens.add({
+            targets: lvlText,
+            scaleX: 1.5, scaleY: 1.5, y: cy - 80, alpha: 0,
+            duration: 1500, ease: 'Power2',
+            onComplete: () => lvlText.destroy(),
+        });
+        this.tweens.add({
+            targets: speedText,
+            scaleX: 1.3, scaleY: 1.3, y: cy - 30, alpha: 0,
+            duration: 1500, delay: 200, ease: 'Power2',
+            onComplete: () => speedText.destroy(),
+        });
+
+        // Epic visual celebration
+        createComboMilestone(this, this.level * 10);
+
+        // Play fanfare sound + announcer
+        playCombo(Math.min(this.level, 4));
+        playAnnouncerLevelUp();
     }
 
     endGame(reason) {

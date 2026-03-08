@@ -1,6 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, DIFFICULTY, SONGS } from '../constants.js';
 import { getHighScore } from '../highscore.js';
-import { playMenuClick, playFanfare } from '../audio.js';
+import { playMenuClick, playFanfare, playAnnouncerNewRecord } from '../audio.js';
 
 export default class GameOverScene extends Phaser.Scene {
     constructor() {
@@ -56,6 +56,7 @@ export default class GameOverScene extends Phaser.Scene {
         // New record
         if (this.isNewRecord) {
             playFanfare();
+            playAnnouncerNewRecord();
             const recordText = this.add.text(GAME_WIDTH / 2, 360, 'NEW HIGH SCORE!', {
                 fontSize: '22px', fill: '#ffaa00', fontStyle: 'bold',
             }).setOrigin(0.5);

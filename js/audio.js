@@ -104,6 +104,33 @@ export function playMenuStart() {
     }
 }
 
+// ========== ANNOUNCER VOICE LINES ==========
+
+export function playAnnouncerCombo(combo) {
+    // Escalating announcer calls at combo milestones
+    if (combo >= 100) {
+        playRandom(['voice_flawless_victory'], 0.7);
+    } else if (combo >= 50) {
+        playRandom(['voice_multi_kill', 'voice_kill_it'], 0.7);
+    } else if (combo >= 25) {
+        playRandom(['voice_combo', 'voice_fight'], 0.6);
+    } else if (combo >= 10) {
+        playRandom(['voice_combo', 'voice_go'], 0.5);
+    }
+}
+
+export function playAnnouncerLevelUp() {
+    playRandom(['voice_level_up', 'voice_ready', 'voice_prepare_yourself'], 0.6);
+}
+
+export function playAnnouncerNewRecord() {
+    playRandom(['voice_new_highscore', 'voice_congratulations', 'voice_winner', 'voice_flawless_victory'], 0.7);
+}
+
+export function playAnnouncerGameOver() {
+    playRandom(['voice_sudden_death', 'voice_you_win'], 0.6);
+}
+
 export function playSiren() {
     if (playRandom(['siren'], 0.2)) return;
     // Procedural fallback
@@ -140,6 +167,11 @@ const SFX_FILES = [
     'menu_click', 'menu_move', 'menu_start',
     'fanfare1', 'fanfare2',
     'siren',
+    // Announcer voice lines (Kenney CC0)
+    'voice_combo', 'voice_multi_kill', 'voice_flawless_victory',
+    'voice_fight', 'voice_prepare_yourself', 'voice_ready',
+    'voice_winner', 'voice_you_win', 'voice_kill_it', 'voice_sudden_death',
+    'voice_congratulations', 'voice_level_up', 'voice_new_highscore', 'voice_go',
 ];
 
 export function preloadSFX(scene) {
