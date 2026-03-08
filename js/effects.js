@@ -884,77 +884,108 @@ export function createLavaTileExplosion(scene, x, y, lane, isPerfect) {
     const colors = LANE_COLORS[lane % 4];
     const mainColor = colors.main;
     const glowColor = colors.glow;
+    const midColor = colors.mid;
 
-    // === TILE FRAGMENTS — many small colored pieces flying everywhere ===
-    const fragCount = isPerfect ? 40 : 28;
+    // Explosion depth must be ABOVE lava (lava is 7-9)
+    const EXPLODE_DEPTH = 25;
+
+    // === TILE FRAGMENTS — LOTS of colored rectangles flying everywhere ===
+    const fragCount = isPerfect ? 60 : 35;
     for (let i = 0; i < fragCount; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const vel = 60 + Math.random() * (isPerfect ? 220 : 150);
-        const fragW = 3 + Math.random() * 10;
-        const fragH = 2 + Math.random() * 6;
+        const vel = 80 + Math.random() * (isPerfect ? 280 : 180);
+        const fragW = 4 + Math.random() * 14;
+        const fragH = 3 + Math.random() * 8;
 
-        const frag = scene.add.rectangle(x, y, fragW, fragH, mainColor, 0.9)
-            .setDepth(18)
-            .setBlendMode(Phaser.BlendModes.ADD)
-            .setRotation(Math.random() * Math.PI * 2);
+        const frag = scene.add.rectangle(
+            x + (Math.random() - 0.5) * 30, y,
+            fragW, fragH, mainColor, 1
+        ).setDepth(EXPLODE_DEPTH)
+         .setRotation(Math.random() * Math.PI * 2);
 
         const targetX = x + Math.cos(angle) * vel;
-        const targetY = y + Math.sin(angle) * vel * 0.6 + 40; // gravity pull down
+        const targetY = y + Math.sin(angle) * vel * 0.7;
 
         scene.tweens.add({
             targets: frag,
             x: targetX,
             y: targetY,
-            rotation: frag.rotation + (Math.random() - 0.5) * 8,
+            rotation: frag.rotation + (Math.random() - 0.5) * 10,
             alpha: 0,
-            scaleX: 0.1,
-            scaleY: 0.1,
-            duration: 400 + Math.random() * 400,
+            scaleX: 0.15,
+            scaleY: 0.15,
+            duration: 500 + Math.random() * 500,
             ease: 'Power2',
             onComplete: () => frag.destroy(),
         });
     }
 
-    // === GLOWING NEON SHARDS — larger colored pieces ===
-    const shardCount = isPerfect ? 16 : 10;
-    for (let i = 0; i < shardCount; i++) {
-        const angle = -Math.PI * 0.8 + Math.random() * Math.PI * 1.6; // mostly upward
-        const vel = 80 + Math.random() * 160;
-        const size = 0.4 + Math.random() * 0.8;
+    // === BRIGHT NEON CHUNKS — larger glowing pieces ===
+    const chunkCount = isPerfect ? 20 : 12;
+    for (let i = 0; i < chunkCount; i++) {
+        const angle = -Math.PI + Math.random() * Math.PI * 2;
+        const vel = 60 + Math.random() * 200;
+        const sz = 6 + Math.random() * 12;
 
-        const shard = scene.add.circle(x + (Math.random() - 0.5) * 30, y, 4 + Math.random() * 6, glowColor, 0.9)
-            .setDepth(19)
-            .setBlendMode(Phaser.BlendModes.ADD);
+        const chunk = scene.add.rectangle(
+            x + (Math.random() - 0.5) * 20, y,
+            sz, sz * (0.4 + Math.random() * 0.6), glowColor, 1
+        ).setDepth(EXPLODE_DEPTH + 1)
+         .setRotation(Math.random() * Math.PI * 2);
 
         scene.tweens.add({
-            targets: shard,
-            x: shard.x + Math.cos(angle) * vel,
-            y: shard.y + Math.sin(angle) * vel,
+            targets: chunk,
+            x: chunk.x + Math.cos(angle) * vel,
+            y: chunk.y + Math.sin(angle) * vel,
+            rotation: chunk.rotation + (Math.random() - 0.5) * 12,
             alpha: 0,
-            scaleX: 0.1,
-            scaleY: 0.1,
-            duration: 350 + Math.random() * 350,
+            duration: 400 + Math.random() * 400,
             ease: 'Power3',
-            onComplete: () => shard.destroy(),
+            onComplete: () => chunk.destroy(),
         });
     }
 
-    // === LAVA SPLASH — orange/yellow molten drops flying up ===
-    const splashCount = isPerfect ? 24 : 14;
+    // === SPARKING DOTS — tiny bright colored sparks ===
+    const sparkCount = isPerfect ? 30 : 18;
+    for (let i = 0; i < sparkCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const vel = 100 + Math.random() * 250;
+
+        const spark = scene.add.circle(
+            x + (Math.random() - 0.5) * 20, y,
+            2 + Math.random() * 3, mainColor, 1
+        ).setDepth(EXPLODE_DEPTH + 2);
+
+        scene.tweens.add({
+            targets: spark,
+            x: spark.x + Math.cos(angle) * vel,
+            y: spark.y + Math.sin(angle) * vel,
+            alpha: 0,
+            scaleX: 0.1,
+            scaleY: 0.1,
+            duration: 300 + Math.random() * 400,
+            ease: 'Power3',
+            onComplete: () => spark.destroy(),
+        });
+    }
+
+    // === LAVA SPLASH — molten drops flying UP ===
+    const splashCount = isPerfect ? 20 : 10;
     for (let i = 0; i < splashCount; i++) {
-        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
-        const vel = 60 + Math.random() * 140;
-        const lavaColors = [0xff4400, 0xff6600, 0xff8800, 0xffaa00, 0xffcc00, 0xffff44];
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.7;
+        const vel = 80 + Math.random() * 160;
+        const lavaColors = [0xff4400, 0xff6600, 0xffaa00, 0xffcc00];
         const c = lavaColors[Math.floor(Math.random() * lavaColors.length)];
 
-        const drop = scene.add.circle(x + (Math.random() - 0.5) * 40, y, 2 + Math.random() * 4, c, 0.9)
-            .setDepth(17)
-            .setBlendMode(Phaser.BlendModes.ADD);
+        const drop = scene.add.circle(
+            x + (Math.random() - 0.5) * 40, y,
+            3 + Math.random() * 5, c, 1
+        ).setDepth(EXPLODE_DEPTH);
 
         scene.tweens.add({
             targets: drop,
             x: drop.x + Math.cos(angle) * vel,
-            y: drop.y + Math.sin(angle) * vel + 60, // gravity
+            y: drop.y + Math.sin(angle) * vel + 50,
             alpha: 0,
             scaleX: 0.2,
             scaleY: 0.2,
@@ -964,9 +995,9 @@ export function createLavaTileExplosion(scene, x, y, lane, isPerfect) {
         });
     }
 
-    // === COLOR FLASH at impact ===
-    const flash = scene.add.circle(x, y, isPerfect ? 50 : 30, mainColor, isPerfect ? 0.7 : 0.5)
-        .setDepth(20)
+    // === BIG COLOR FLASH ===
+    const flash = scene.add.circle(x, y, isPerfect ? 55 : 35, mainColor, isPerfect ? 0.8 : 0.6)
+        .setDepth(EXPLODE_DEPTH + 3)
         .setBlendMode(Phaser.BlendModes.ADD);
 
     scene.tweens.add({
@@ -974,86 +1005,73 @@ export function createLavaTileExplosion(scene, x, y, lane, isPerfect) {
         scaleX: 4,
         scaleY: 4,
         alpha: 0,
-        duration: 300,
+        duration: 350,
         ease: 'Power2',
         onComplete: () => flash.destroy(),
     });
 
     // === COLORED SHOCKWAVE RING ===
     const ring = scene.add.circle(x, y, 10, mainColor, 0)
-        .setDepth(19)
-        .setStrokeStyle(3, mainColor, 0.8)
-        .setBlendMode(Phaser.BlendModes.ADD);
+        .setDepth(EXPLODE_DEPTH + 2)
+        .setStrokeStyle(4, mainColor, 0.9);
 
     scene.tweens.add({
         targets: ring,
-        scaleX: isPerfect ? 5 : 3,
-        scaleY: isPerfect ? 5 : 3,
+        scaleX: isPerfect ? 6 : 3.5,
+        scaleY: isPerfect ? 6 : 3.5,
         alpha: 0,
         duration: isPerfect ? 500 : 350,
         ease: 'Power2',
         onComplete: () => ring.destroy(),
     });
-
-    // === LAVA SURFACE DISTURBANCE — wide ripple ===
-    const lavaRipple = scene.add.rectangle(x, y + 10, LANE_WIDTH + 20, 8, 0xff6600, 0.5)
-        .setDepth(16)
-        .setBlendMode(Phaser.BlendModes.ADD);
-
-    scene.tweens.add({
-        targets: lavaRipple,
-        scaleX: 3,
-        scaleY: 0.3,
-        alpha: 0,
-        duration: 400,
-        ease: 'Power2',
-        onComplete: () => lavaRipple.destroy(),
-    });
 }
 
-// ========== LAVA MISS EXPLOSION (tile falls into lava) ==========
+// ========== LAVA MISS EXPLOSION (tile sinks into lava) ==========
 
 export function createLavaMissExplosion(scene, x, y, lane) {
     const colors = LANE_COLORS[lane % 4];
+    const EXPLODE_DEPTH = 25;
 
-    // Smaller fragments sinking into lava
-    for (let i = 0; i < 18; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const vel = 30 + Math.random() * 80;
-        const fragW = 2 + Math.random() * 8;
-        const fragH = 2 + Math.random() * 5;
+    // Colored fragments flying up from lava
+    for (let i = 0; i < 25; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.2;
+        const vel = 40 + Math.random() * 120;
+        const fragW = 3 + Math.random() * 10;
+        const fragH = 2 + Math.random() * 6;
 
-        const frag = scene.add.rectangle(x + (Math.random() - 0.5) * LANE_WIDTH * 0.6, y, fragW, fragH, colors.main, 0.7)
-            .setDepth(16)
-            .setBlendMode(Phaser.BlendModes.ADD)
-            .setRotation(Math.random() * Math.PI * 2);
+        const frag = scene.add.rectangle(
+            x + (Math.random() - 0.5) * LANE_WIDTH * 0.6, y,
+            fragW, fragH, colors.main, 0.9
+        ).setDepth(EXPLODE_DEPTH)
+         .setRotation(Math.random() * Math.PI * 2);
 
         scene.tweens.add({
             targets: frag,
-            x: frag.x + Math.cos(angle) * vel * 0.6,
-            y: frag.y + 30 + Math.random() * 40, // sink down
-            rotation: frag.rotation + (Math.random() - 0.5) * 6,
+            x: frag.x + Math.cos(angle) * vel,
+            y: frag.y + Math.sin(angle) * vel + 30,
+            rotation: frag.rotation + (Math.random() - 0.5) * 8,
             alpha: 0,
-            duration: 300 + Math.random() * 300,
+            duration: 350 + Math.random() * 300,
             ease: 'Power2',
             onComplete: () => frag.destroy(),
         });
     }
 
     // Lava splash upward
-    for (let i = 0; i < 10; i++) {
-        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.6;
-        const vel = 40 + Math.random() * 80;
+    for (let i = 0; i < 12; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.5;
+        const vel = 50 + Math.random() * 100;
         const lavaC = [0xff4400, 0xff6600, 0xffaa00][Math.floor(Math.random() * 3)];
 
-        const drop = scene.add.circle(x + (Math.random() - 0.5) * 30, y, 2 + Math.random() * 3, lavaC, 0.7)
-            .setDepth(17)
-            .setBlendMode(Phaser.BlendModes.ADD);
+        const drop = scene.add.circle(
+            x + (Math.random() - 0.5) * 30, y,
+            3 + Math.random() * 4, lavaC, 0.9
+        ).setDepth(EXPLODE_DEPTH);
 
         scene.tweens.add({
             targets: drop,
             x: drop.x + Math.cos(angle) * vel,
-            y: drop.y + Math.sin(angle) * vel + 30,
+            y: drop.y + Math.sin(angle) * vel + 25,
             alpha: 0,
             duration: 400 + Math.random() * 200,
             onComplete: () => drop.destroy(),
@@ -1061,15 +1079,15 @@ export function createLavaMissExplosion(scene, x, y, lane) {
     }
 
     // Red flash
-    const flash = scene.add.circle(x, y, 25, 0xff2200, 0.4)
-        .setDepth(16)
+    const flash = scene.add.circle(x, y, 30, 0xff2200, 0.5)
+        .setDepth(EXPLODE_DEPTH)
         .setBlendMode(Phaser.BlendModes.ADD);
     scene.tweens.add({
         targets: flash,
-        scaleX: 2.5,
-        scaleY: 2.5,
+        scaleX: 3,
+        scaleY: 3,
         alpha: 0,
-        duration: 250,
+        duration: 300,
         onComplete: () => flash.destroy(),
     });
 }
@@ -1087,155 +1105,199 @@ export function createAnimatedBackground(scene) {
         bg.lineBetween(i * LANE_WIDTH, 0, i * LANE_WIDTH, GAME_HEIGHT);
     }
 
-    // ========== LAVA ZONE (below strike line) ==========
-    const lavaTop = scene.strikeLineY + 3;
+    // ========== BRUTAL LAVA ZONE (below strike line) ==========
+    // DEPTH 7-9: ABOVE tiles (depth 5) so tiles fall BEHIND the lava
+    const lavaTop = scene.strikeLineY;
     const lavaHeight = GAME_HEIGHT - lavaTop;
-    const lavaGfx = scene.add.graphics().setDepth(1);
 
-    // Lava gradient layers — dark red at bottom to bright orange at surface
-    const lavaSteps = 12;
-    for (let i = 0; i < lavaSteps; i++) {
-        const t = i / lavaSteps;
-        // Dark red/brown at bottom → bright orange at top
-        const r = Math.floor(60 + t * 195);
-        const g = Math.floor(5 + t * 60);
-        const b = Math.floor(0 + t * 5);
-        const color = (r << 16) | (g << 8) | b;
-        const stepY = lavaTop + (1 - t) * lavaHeight * 0.8;
-        const stepH = lavaHeight / lavaSteps + 2;
-        lavaGfx.fillStyle(color, 0.35 + t * 0.25);
-        lavaGfx.fillRect(0, stepY, GAME_WIDTH, stepH);
+    // --- Create lava canvas texture for a real molten look ---
+    if (!scene.textures.exists('lavaTexture')) {
+        const lavaCanvas = scene.textures.createCanvas('lavaTexture', GAME_WIDTH, lavaHeight);
+        const lCtx = lavaCanvas.getContext();
+
+        // Base gradient: dark crimson bottom → bright orange/yellow top
+        const baseGrad = lCtx.createLinearGradient(0, 0, 0, lavaHeight);
+        baseGrad.addColorStop(0, '#ff6600');
+        baseGrad.addColorStop(0.08, '#ee4400');
+        baseGrad.addColorStop(0.2, '#cc2200');
+        baseGrad.addColorStop(0.4, '#881100');
+        baseGrad.addColorStop(0.7, '#440800');
+        baseGrad.addColorStop(1, '#220400');
+        lCtx.fillStyle = baseGrad;
+        lCtx.fillRect(0, 0, GAME_WIDTH, lavaHeight);
+
+        // Hot veins / bright magma streaks
+        for (let i = 0; i < 25; i++) {
+            const vx = Math.random() * GAME_WIDTH;
+            const vy = Math.random() * lavaHeight * 0.7;
+            const vw = 15 + Math.random() * 60;
+            const vh = 4 + Math.random() * 12;
+            const vGrad = lCtx.createRadialGradient(vx, vy, 0, vx, vy, vw);
+            vGrad.addColorStop(0, 'rgba(255, 200, 50, 0.7)');
+            vGrad.addColorStop(0.3, 'rgba(255, 120, 0, 0.5)');
+            vGrad.addColorStop(0.7, 'rgba(200, 50, 0, 0.2)');
+            vGrad.addColorStop(1, 'rgba(100, 20, 0, 0)');
+            lCtx.fillStyle = vGrad;
+            lCtx.fillEllipse ? null : null; // no fillEllipse, use arc
+            lCtx.beginPath();
+            lCtx.ellipse(vx, vy, vw, vh, Math.random() * Math.PI, 0, Math.PI * 2);
+            lCtx.fill();
+        }
+
+        // Dark crust/rock patches
+        for (let i = 0; i < 15; i++) {
+            const cx = Math.random() * GAME_WIDTH;
+            const cy = 10 + Math.random() * (lavaHeight - 20);
+            const cw = 20 + Math.random() * 60;
+            const ch = 8 + Math.random() * 15;
+            lCtx.fillStyle = `rgba(20, 5, 0, ${0.4 + Math.random() * 0.4})`;
+            lCtx.beginPath();
+            lCtx.ellipse(cx, cy, cw / 2, ch / 2, Math.random() * Math.PI, 0, Math.PI * 2);
+            lCtx.fill();
+        }
+
+        // Super bright surface glow (top 20px)
+        const surfGrad = lCtx.createLinearGradient(0, 0, 0, 25);
+        surfGrad.addColorStop(0, 'rgba(255, 220, 80, 0.9)');
+        surfGrad.addColorStop(0.3, 'rgba(255, 150, 0, 0.6)');
+        surfGrad.addColorStop(0.7, 'rgba(255, 80, 0, 0.3)');
+        surfGrad.addColorStop(1, 'rgba(200, 40, 0, 0)');
+        lCtx.fillStyle = surfGrad;
+        lCtx.fillRect(0, 0, GAME_WIDTH, 25);
+
+        // Bright spots (glowing magma pools)
+        for (let i = 0; i < 12; i++) {
+            const sx = Math.random() * GAME_WIDTH;
+            const sy = Math.random() * lavaHeight * 0.5;
+            const sr = 10 + Math.random() * 25;
+            const sGrad = lCtx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+            sGrad.addColorStop(0, 'rgba(255, 255, 100, 0.6)');
+            sGrad.addColorStop(0.4, 'rgba(255, 180, 0, 0.3)');
+            sGrad.addColorStop(1, 'rgba(255, 80, 0, 0)');
+            lCtx.fillStyle = sGrad;
+            lCtx.fillRect(sx - sr, sy - sr, sr * 2, sr * 2);
+        }
+
+        lavaCanvas.refresh();
     }
 
-    // Lava surface bright line
-    lavaGfx.fillStyle(0xffcc00, 0.4);
-    lavaGfx.fillRect(0, lavaTop, GAME_WIDTH, 4);
-    lavaGfx.fillStyle(0xff8800, 0.6);
-    lavaGfx.fillRect(0, lavaTop, GAME_WIDTH, 2);
+    // Place lava texture — DEPTH 7 = ABOVE tiles (depth 5)
+    const lavaImg = scene.add.image(GAME_WIDTH / 2, lavaTop + lavaHeight / 2, 'lavaTexture')
+        .setDepth(7)
+        .setAlpha(1);
 
-    // Dark crust patches on lava surface
-    for (let i = 0; i < 8; i++) {
-        const cx = Math.random() * GAME_WIDTH;
-        const cw = 20 + Math.random() * 50;
-        const cy = lavaTop + 15 + Math.random() * (lavaHeight - 30);
-        lavaGfx.fillStyle(0x220000, 0.3);
-        lavaGfx.fillRoundedRect(cx - cw / 2, cy - 5, cw, 8 + Math.random() * 6, 4);
-    }
+    // === LAVA SURFACE GLOW — bright pulsing line at top ===
+    const lavaGlow = scene.add.rectangle(GAME_WIDTH / 2, lavaTop + 3, GAME_WIDTH, 10, 0xff8800, 0.5)
+        .setDepth(8).setBlendMode(Phaser.BlendModes.ADD);
+
+    scene.tweens.add({
+        targets: lavaGlow,
+        alpha: 0.2,
+        scaleY: 2,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+    });
+
+    const lavaGlow2 = scene.add.rectangle(GAME_WIDTH / 2, lavaTop + 2, GAME_WIDTH, 4, 0xffcc00, 0.6)
+        .setDepth(8).setBlendMode(Phaser.BlendModes.ADD);
+
+    scene.tweens.add({
+        targets: lavaGlow2,
+        alpha: 0.15,
+        scaleY: 3,
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        delay: 250,
+        ease: 'Sine.easeInOut',
+    });
 
     // === LAVA BUBBLES — glowing circles that rise and pop ===
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 12; i++) {
         const bx = Math.random() * GAME_WIDTH;
-        const by = lavaTop + 20 + Math.random() * (lavaHeight - 40);
-        const bubbleSize = 3 + Math.random() * 8;
-        const bubbleColors = [0xff6600, 0xff8800, 0xffaa00, 0xffcc00];
+        const by = lavaTop + 30 + Math.random() * (lavaHeight - 50);
+        const bubbleSize = 4 + Math.random() * 10;
+        const bubbleColors = [0xff6600, 0xff8800, 0xffaa00, 0xffcc00, 0xffff44];
         const bc = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
 
-        const bubble = scene.add.circle(bx, by, bubbleSize, bc, 0.3 + Math.random() * 0.3)
-            .setDepth(2)
+        const bubble = scene.add.circle(bx, by, bubbleSize, bc, 0.4 + Math.random() * 0.4)
+            .setDepth(8)
             .setBlendMode(Phaser.BlendModes.ADD);
 
         scene.tweens.add({
             targets: bubble,
-            y: lavaTop + 5,
-            scaleX: 1.5 + Math.random(),
-            scaleY: 1.5 + Math.random(),
+            y: lavaTop + 8,
+            scaleX: 1.8 + Math.random(),
+            scaleY: 1.8 + Math.random(),
             alpha: 0,
-            duration: 1500 + Math.random() * 2000,
+            duration: 1200 + Math.random() * 1500,
             repeat: -1,
             delay: Math.random() * 3000,
             ease: 'Sine.easeOut',
-            onComplete: () => {},
             onRepeat: () => {
                 bubble.x = Math.random() * GAME_WIDTH;
-                bubble.y = lavaTop + 20 + Math.random() * (lavaHeight - 40);
+                bubble.y = lavaTop + 30 + Math.random() * (lavaHeight - 50);
                 bubble.setScale(1);
-                bubble.setAlpha(0.3 + Math.random() * 0.3);
+                bubble.setAlpha(0.4 + Math.random() * 0.4);
             },
         });
     }
 
-    // === LAVA SURFACE GLOW — pulsing bright line ===
-    const lavaGlow = scene.add.rectangle(GAME_WIDTH / 2, lavaTop + 2, GAME_WIDTH, 8, 0xff6600, 0.4)
-        .setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
-
-    scene.tweens.add({
-        targets: lavaGlow,
-        alpha: 0.15,
-        scaleY: 2.5,
-        duration: 600,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-    });
-
-    // Second lava glow (offset)
-    const lavaGlow2 = scene.add.rectangle(GAME_WIDTH / 2, lavaTop + 2, GAME_WIDTH, 4, 0xffaa00, 0.25)
-        .setDepth(2).setBlendMode(Phaser.BlendModes.ADD);
-
-    scene.tweens.add({
-        targets: lavaGlow2,
-        alpha: 0.08,
-        scaleY: 4,
-        duration: 900,
-        yoyo: true,
-        repeat: -1,
-        delay: 300,
-        ease: 'Sine.easeInOut',
-    });
-
-    // === FLAMES SHOOTING UP from lava surface ===
-    for (let i = 0; i < 30; i++) {
+    // === FLAMES SHOOTING UP from lava — ABOVE lava (depth 9) ===
+    for (let i = 0; i < 35; i++) {
         const fx = Math.random() * GAME_WIDTH;
-        const fy = lavaTop + Math.random() * 8;
-        const flameSize = 0.3 + Math.random() * 0.6;
+        const fy = lavaTop + Math.random() * 5;
+        const flameSize = 0.3 + Math.random() * 0.7;
         const tex = Math.random() > 0.4 ? 'fireParticle' : 'bigFireParticle';
 
         const flame = scene.add.image(fx, fy, tex)
             .setScale(flameSize)
-            .setDepth(3)
+            .setDepth(9)
             .setBlendMode(Phaser.BlendModes.ADD)
-            .setAlpha(0.5 + Math.random() * 0.4);
+            .setAlpha(0.6 + Math.random() * 0.4);
 
         scene.tweens.add({
             targets: flame,
-            y: fy - 40 - Math.random() * 80,
+            y: fy - 40 - Math.random() * 100,
             x: fx + (Math.random() - 0.5) * 40,
-            scaleX: flameSize * 0.1,
-            scaleY: flameSize * 0.1,
+            scaleX: flameSize * 0.05,
+            scaleY: flameSize * 0.05,
             alpha: 0,
-            duration: 600 + Math.random() * 800,
+            duration: 500 + Math.random() * 700,
             repeat: -1,
             delay: Math.random() * 2000,
             ease: 'Power2',
             onRepeat: () => {
                 flame.x = Math.random() * GAME_WIDTH;
-                flame.y = lavaTop + Math.random() * 8;
-                flame.setScale(0.3 + Math.random() * 0.6);
-                flame.setAlpha(0.5 + Math.random() * 0.4);
+                flame.y = lavaTop + Math.random() * 5;
+                flame.setScale(0.3 + Math.random() * 0.7);
+                flame.setAlpha(0.6 + Math.random() * 0.4);
             },
         });
     }
 
-    // === LARGE SPORADIC FLAME BURSTS from lava ===
-    for (let i = 0; i < 6; i++) {
+    // === LARGE SPORADIC FLAME BURSTS ===
+    for (let i = 0; i < 8; i++) {
         const fx = Math.random() * GAME_WIDTH;
 
         const bigFlame = scene.add.image(fx, lavaTop, 'bigFireParticle')
             .setScale(0.1)
-            .setDepth(3)
+            .setDepth(9)
             .setBlendMode(Phaser.BlendModes.ADD)
             .setAlpha(0);
 
         scene.tweens.add({
             targets: bigFlame,
-            y: lavaTop - 60 - Math.random() * 50,
-            scaleX: 0.8 + Math.random() * 0.6,
-            scaleY: 1.0 + Math.random() * 0.8,
-            alpha: { from: 0.7, to: 0 },
-            duration: 800 + Math.random() * 600,
+            y: lavaTop - 70 - Math.random() * 60,
+            scaleX: 1.0 + Math.random() * 0.8,
+            scaleY: 1.2 + Math.random() * 1.0,
+            alpha: { from: 0.8, to: 0 },
+            duration: 700 + Math.random() * 500,
             repeat: -1,
             delay: Math.random() * 4000,
-            repeatDelay: 2000 + Math.random() * 3000,
+            repeatDelay: 1500 + Math.random() * 2500,
             ease: 'Power2',
             onRepeat: () => {
                 bigFlame.x = Math.random() * GAME_WIDTH;
@@ -1244,62 +1306,66 @@ export function createAnimatedBackground(scene) {
         });
     }
 
-    // === EMBER / SPARK SPRAY from lava ===
-    for (let i = 0; i < 20; i++) {
+    // === SPARK SPRAY from lava ===
+    for (let i = 0; i < 25; i++) {
         const sx = Math.random() * GAME_WIDTH;
         const sy = lavaTop;
 
         const spark = scene.add.image(sx, sy, 'sparkParticle')
-            .setScale(0.3 + Math.random() * 0.5)
-            .setDepth(3)
+            .setScale(0.4 + Math.random() * 0.6)
+            .setDepth(9)
             .setBlendMode(Phaser.BlendModes.ADD)
-            .setAlpha(0.6 + Math.random() * 0.4);
+            .setAlpha(0.7 + Math.random() * 0.3);
 
         scene.tweens.add({
             targets: spark,
-            y: sy - 50 - Math.random() * 120,
-            x: sx + (Math.random() - 0.5) * 60,
+            y: sy - 60 - Math.random() * 140,
+            x: sx + (Math.random() - 0.5) * 70,
             alpha: 0,
             scaleX: 0.05,
             scaleY: 0.05,
-            duration: 800 + Math.random() * 1200,
+            duration: 700 + Math.random() * 1000,
             repeat: -1,
             delay: Math.random() * 3000,
             ease: 'Sine.easeOut',
             onRepeat: () => {
                 spark.x = Math.random() * GAME_WIDTH;
                 spark.y = lavaTop;
-                spark.setScale(0.3 + Math.random() * 0.5);
-                spark.setAlpha(0.6 + Math.random() * 0.4);
+                spark.setScale(0.4 + Math.random() * 0.6);
+                spark.setAlpha(0.7 + Math.random() * 0.3);
             },
         });
     }
 
-    // ========== STRIKE LINE (on top of lava) ==========
-    const glowLine = scene.add.graphics().setDepth(4);
+    // ========== STRIKE LINE (ABOVE lava, depth 9) ==========
+    const glowLine = scene.add.graphics().setDepth(9);
 
-    // Wide fire glow above strike line
-    glowLine.fillStyle(0xff2200, 0.06);
-    glowLine.fillRect(0, scene.strikeLineY - 40, GAME_WIDTH, 40);
-    glowLine.fillStyle(0xff4400, 0.12);
-    glowLine.fillRect(0, scene.strikeLineY - 25, GAME_WIDTH, 25);
-    glowLine.fillStyle(0xff6600, 0.18);
-    glowLine.fillRect(0, scene.strikeLineY - 12, GAME_WIDTH, 12);
+    // Heat haze glow above strike line
+    glowLine.fillStyle(0xff2200, 0.08);
+    glowLine.fillRect(0, scene.strikeLineY - 50, GAME_WIDTH, 50);
+    glowLine.fillStyle(0xff4400, 0.15);
+    glowLine.fillRect(0, scene.strikeLineY - 30, GAME_WIDTH, 30);
+    glowLine.fillStyle(0xff6600, 0.25);
+    glowLine.fillRect(0, scene.strikeLineY - 15, GAME_WIDTH, 15);
 
     // Main bright line
-    glowLine.lineStyle(3, 0xff6600, 0.9);
+    glowLine.lineStyle(4, 0xff8800, 1);
+    glowLine.lineBetween(0, scene.strikeLineY, GAME_WIDTH, scene.strikeLineY);
+
+    // White-hot core
+    glowLine.lineStyle(2, 0xffdd88, 0.8);
     glowLine.lineBetween(0, scene.strikeLineY, GAME_WIDTH, scene.strikeLineY);
 
     // Neon accent lines
     glowLine.lineStyle(1, 0x00ffff, 0.25);
-    glowLine.lineBetween(0, scene.strikeLineY - 2, GAME_WIDTH, scene.strikeLineY - 2);
+    glowLine.lineBetween(0, scene.strikeLineY - 3, GAME_WIDTH, scene.strikeLineY - 3);
     glowLine.lineStyle(1, 0xff00ff, 0.15);
-    glowLine.lineBetween(0, scene.strikeLineY + 2, GAME_WIDTH, scene.strikeLineY + 2);
+    glowLine.lineBetween(0, scene.strikeLineY + 3, GAME_WIDTH, scene.strikeLineY + 3);
 
     // Pulsing strike line glow
     const pulseGlow = scene.add.rectangle(
-        GAME_WIDTH / 2, scene.strikeLineY, GAME_WIDTH, 6, 0xff6600, 0.3
-    ).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+        GAME_WIDTH / 2, scene.strikeLineY, GAME_WIDTH, 8, 0xff6600, 0.4
+    ).setDepth(9).setBlendMode(Phaser.BlendModes.ADD);
 
     scene.tweens.add({
         targets: pulseGlow,
@@ -1308,22 +1374,6 @@ export function createAnimatedBackground(scene) {
         duration: 800,
         yoyo: true,
         repeat: -1,
-        ease: 'Sine.easeInOut',
-    });
-
-    // Neon pulse on strike line
-    const neonPulse = scene.add.rectangle(
-        GAME_WIDTH / 2, scene.strikeLineY, GAME_WIDTH, 2, 0x00ffff, 0.15
-    ).setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
-
-    scene.tweens.add({
-        targets: neonPulse,
-        alpha: 0.05,
-        scaleY: 5,
-        duration: 1200,
-        yoyo: true,
-        repeat: -1,
-        delay: 400,
         ease: 'Sine.easeInOut',
     });
 
