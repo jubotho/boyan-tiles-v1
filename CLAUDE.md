@@ -15,21 +15,29 @@ No build system, package manager, or tests. Serve with any static file server (e
 Multi-file structure using ES modules. Phaser is loaded as a global from CDN; all game code imports from local modules.
 
 ```
-index.html              - HTML shell, loads Phaser CDN + tsparticles CDN + js/main.js
-css/style.css           - Dark theme styles, game wrapper positioning
-js/main.js              - Entry point, Phaser config, scene registration, tsparticles fire bg
-js/constants.js         - Game dimensions, lanes, difficulty configs, song list (with file refs)
-js/audio.js             - SFX via Phaser audio (WAV files) + BGM via MP3 files. Procedural fallback.
-js/beatmaps.js          - 9 beatmaps (3 songs x 3 difficulties), generated via helper
-js/highscore.js         - localStorage high score persistence
-js/effects.js           - MASSIVE effects system: neon tiles, fire/neon explosions, combo milestones,
-                          lightning, fire columns, fire rain, border fire, neon pulses, fire trails
-js/scenes/BootScene.js  - Splash screen + audio preloader with loading bar
-js/scenes/MenuScene.js  - Song + difficulty selection, high score display
-js/scenes/GameScene.js  - Core gameplay loop (largest file), dramatic events, combo system
-js/scenes/GameOverScene.js - Results, new record fanfare, play again / menu
-audio/sfx/              - 38 WAV sound effects: 24 retro SFX (CC0 Juhani Junkala) + 14 announcer voices (CC0 Kenney)
-audio/music/            - 3 MP3 music tracks (electronic/techno, CC0)
+index.html                      - HTML shell, loads Phaser CDN + tsparticles CDN + js/main.js
+css/style.css                   - Dark theme styles, game wrapper positioning
+js/main.js                      - Entry point, Phaser config, scene registration, tsparticles fire bg
+js/constants.js                 - Game dimensions, lanes, difficulty configs, song list (with file refs)
+js/audio.js                     - SFX via Phaser audio (WAV files) + BGM via MP3 files. Procedural fallback.
+js/beatmaps.js                  - 9 beatmaps (3 songs x 3 difficulties), generated via helper
+js/highscore.js                 - localStorage high score persistence
+js/effects/index.js             - Barrel re-export for all effects (single import point)
+js/effects/textures.js          - Procedural canvas textures (fire, spark, smoke, neon, ring) + LANE_COLORS
+js/effects/explosions.js        - Fire + neon hit explosions, hit particles
+js/effects/milestones.js        - Combo milestone celebrations (10/25/50/100)
+js/effects/dramatic.js          - Lightning, fire columns, neon pulse, fire rain, border fire, random events
+js/effects/tileEffects.js       - Neon tile rendering, fire trails, combo border glow, combo fire aura
+js/effects/feedback.js          - Miss flash, tap ripple
+js/effects/lavaExplosions.js    - Color-matched lava tile explosions (hit + miss)
+js/effects/background.js        - Lava zone, strike line, lane dividers, ambient particles
+js/managers/BonusNameManager.js - Bonus name spawning, animation, tap handling, cleanup
+js/scenes/BootScene.js          - Splash screen + audio preloader with loading bar
+js/scenes/MenuScene.js          - Song + difficulty selection, high score display
+js/scenes/GameScene.js          - Core gameplay loop, input, scoring, level progression
+js/scenes/GameOverScene.js      - Results, new record fanfare, play again / menu
+audio/sfx/                      - 38 WAV sound effects: 24 retro SFX (CC0 Juhani Junkala) + 14 announcer voices (CC0 Kenney)
+audio/music/                    - 3 MP3 music tracks (electronic/techno, CC0)
 ```
 
 ### Key Design Decisions
@@ -44,7 +52,7 @@ audio/music/            - 3 MP3 music tracks (electronic/techno, CC0)
 - **Scene flow**: BootScene (preload) → MenuScene → GameScene → GameOverScene → (GameScene or MenuScene)
 - **Tiles** are Phaser Graphics objects with per-lane neon colors (cyan/magenta/orange/green), animated pulse borders. Data stored via `setData('tileData', {...})`.
 - **Hit detection**: lane = `Math.floor(pointer.x / LANE_WIDTH)` clamped to `[0, LANES-1]`. Vertical window: tile center from -250 to +70 relative to strike line. Auto-miss at +90.
-- **Effects system** (`effects.js`): canvas-generated textures (fire, neon, smoke, ring particles), combo milestones at 10/25/50/100, random dramatic events every 2.5-6.5s, fire trails behind tiles, combo border glow, **lava zone** (canvas texture at depth 7-9, tiles at depth 5 fall behind it), **color-matched tile explosions** (fragments in note's neon color at depth 25+).
+- **Effects system** (`js/effects/`): modular effects split into 8 files. Textures, explosions, milestones, dramatic events, tile rendering, feedback, lava explosions, and background are separate modules. `index.js` barrel re-exports everything. `LANE_COLORS` shared constant lives in `textures.js`.
 - **Lava zone depth layering**: Lava (depth 7-9) > Tiles (depth 5) > Background (depth 0-1). Explosions (depth 25+) appear above lava. Flames from lava at depth 9.
 - **Level loop**: Songs loop on completion with 15% speed increase per level. Game only ends on death.
 - **Announcer voices**: Kenney CC0 voice clips at combo milestones (10/25/50/100), level ups, new high scores.

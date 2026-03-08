@@ -1,5 +1,5 @@
 import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT } from '../constants.js';
-import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, playSiren, initAudio, createBGM, playAnnouncerCombo, playAnnouncerLevelUp } from '../audio.js';
+import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, initAudio, createBGM, playAnnouncerCombo, playAnnouncerLevelUp } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
 import {
@@ -8,7 +8,8 @@ import {
     createAnimatedBackground, createComboMilestone, spawnRandomDramaticEvent,
     createFireTrail, updateComboBorderGlow, createNeonPulseWave,
     createLavaTileExplosion, createLavaMissExplosion,
-} from '../effects.js';
+} from '../effects/index.js';
+import { spawnBonusName, updateBonusNames, cleanupBonusNames } from '../managers/BonusNameManager.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -116,22 +117,12 @@ export default class GameScene extends Phaser.Scene {
 
         // Bonus names
         if (elapsed >= this.nextBonusTime) {
-            this.spawnBonusName();
+            spawnBonusName(this);
             this.nextBonusTime = elapsed + 8000 + Math.random() * 7000; // next one in 8-15s
         }
 
         // Update bonus names
-        this.bonusNames = this.bonusNames.filter(b => {
-            if (b.destroyed) return false;
-            b.age += 1;
-            // Remove after ~4 seconds (240 frames at 60fps)
-            if (b.age > 240) {
-                b.flashTimer.destroy();
-                b.container.destroy();
-                return false;
-            }
-            return true;
-        });
+        updateBonusNames(this);
 
         if (this.isEndless) {
             // Endless mode: generate tiles on the fly, speed up over time
@@ -352,145 +343,6 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    spawnBonusName() {
-        const names = ['Светльо', 'Боян', 'Пешко', 'Цвети', 'Дари'];
-        const name = names[Math.floor(Math.random() * names.length)];
-        const colors = [0xff0000, 0xff6600, 0xffcc00, 0x00ff66, 0xff00ff, 0x00ccff];
-
-        // Siren when bonus appears!
-        playSiren();
-
-        const x = 60 + Math.random() * (GAME_WIDTH - 120);
-        const y = 80 + Math.random() * (GAME_HEIGHT - 250);
-
-        const container = this.add.container(x, y).setDepth(20);
-
-        // Glowing background circle
-        const glow = this.add.circle(0, 0, 45, 0xffff00, 0.2);
-        container.add(glow);
-
-        // The name text
-        const txt = this.add.text(0, 0, name, {
-            fontSize: '28px',
-            fill: '#fff',
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: 4,
-        }).setOrigin(0.5);
-        container.add(txt);
-
-        // Make it interactive
-        const hitZone = this.add.circle(0, 0, 50, 0xffffff, 0.001).setInteractive();
-        container.add(hitZone);
-
-        // Spinning rotation
-        this.tweens.add({
-            targets: container,
-            angle: { from: -15, to: 15 },
-            duration: 300,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-        });
-
-        // Bouncing up and down
-        this.tweens.add({
-            targets: container,
-            y: y - 25,
-            duration: 400,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-        });
-
-        // Scale pulse
-        this.tweens.add({
-            targets: container,
-            scaleX: 1.2,
-            scaleY: 1.2,
-            duration: 200,
-            yoyo: true,
-            repeat: -1,
-        });
-
-        // Flashing color change
-        let colorIdx = 0;
-        const flashTimer = this.time.addEvent({
-            delay: 120,
-            loop: true,
-            callback: () => {
-                if (!txt || !txt.scene) return;
-                colorIdx = (colorIdx + 1) % colors.length;
-                const c = colors[colorIdx];
-                txt.setFill('#' + c.toString(16).padStart(6, '0'));
-                glow.setFillStyle(c, 0.25);
-            },
-        });
-
-        const bonusData = {
-            container,
-            hitZone,
-            txt,
-            glow,
-            flashTimer,
-            age: 0,
-            spawnTime: this.time.now - this.startTime,
-            destroyed: false,
-        };
-
-        hitZone.on('pointerdown', (pointer) => {
-            if (bonusData.destroyed) return;
-            bonusData.destroyed = true;
-
-            // Faster tap = more points (max 200 if tapped in first 0.5s)
-            const tapTime = (this.time.now - this.startTime) - bonusData.spawnTime;
-            const bonusPoints = Math.max(20, Math.floor(200 - tapTime * 0.05));
-
-            this.score += bonusPoints;
-            this.scoreText.setText(Math.floor(this.score));
-
-            // Siren!
-            playSiren();
-
-            // Big flashy feedback
-            const bonusText = this.add.text(container.x, container.y, `+${bonusPoints}`, {
-                fontSize: '40px', fill: '#ffcc00', fontStyle: 'bold',
-                stroke: '#ff0000', strokeThickness: 5,
-            }).setOrigin(0.5).setDepth(30);
-
-            this.tweens.add({
-                targets: bonusText,
-                y: bonusText.y - 80,
-                scaleX: 1.5,
-                scaleY: 1.5,
-                alpha: 0,
-                duration: 800,
-                onComplete: () => bonusText.destroy(),
-            });
-
-            // Explosion particles
-            for (let i = 0; i < 20; i++) {
-                const angle = (Math.PI * 2 * i) / 20;
-                const speed = 60 + Math.random() * 80;
-                const c = colors[Math.floor(Math.random() * colors.length)];
-                const p = this.add.circle(container.x, container.y, 3 + Math.random() * 4, c, 0.9).setDepth(25);
-                this.tweens.add({
-                    targets: p,
-                    x: container.x + Math.cos(angle) * speed,
-                    y: container.y + Math.sin(angle) * speed,
-                    alpha: 0,
-                    duration: 500 + Math.random() * 300,
-                    onComplete: () => p.destroy(),
-                });
-            }
-
-            flashTimer.destroy();
-            container.destroy();
-        });
-
-        this.bonusNames.push(bonusData);
-    }
-
     levelUp(elapsed) {
         this.level++;
         // Speed up 15% each level
@@ -498,7 +350,6 @@ export default class GameScene extends Phaser.Scene {
 
         // Calculate offset: last note time + 2s gap
         const lastNote = this.beatmap[this.beatmap.length - 1];
-        const lastNoteTime = lastNote[0];
         this.beatmapTimeOffset = elapsed + 1500; // 1.5s gap before next loop starts
         this.nextNoteIndex = 0;
 
@@ -544,9 +395,7 @@ export default class GameScene extends Phaser.Scene {
     endGame(reason) {
         this.isGameOver = true;
         this.bgm.stop();
-        this.bonusNames.forEach(b => {
-            if (!b.destroyed) { b.flashTimer.destroy(); b.container.destroy(); }
-        });
+        cleanupBonusNames(this.bonusNames);
 
         const isNewRecord = setHighScore(this.songId, this.difficulty, this.score);
 
