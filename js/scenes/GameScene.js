@@ -117,7 +117,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Update rewind effect
         this.rewindManager.update(realElapsed, realDelta);
-        this.gameTime += realDelta * this.rewindManager.forwardFactor;
+        this.gameTime += realDelta * (this.rewindManager.forwardFactor - this.rewindManager.reverseFactor * REWIND_SPEED_FACTOR);
         const elapsed = this.gameTime;
         const rewindActive = this.rewindManager.isActive();
 
@@ -219,7 +219,7 @@ export default class GameScene extends Phaser.Scene {
                     createFireTrail(this, tx, tileObj.y + tile.height / 2, this.combo);
                 }
 
-                if (!tile.isHit) {
+                if (!tile.isHit && !rewindActive) {
                     const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
                     if (headY > this.strikeLineY + AUTO_MISS_THRESHOLD) {
                         tile.isHit = true;
