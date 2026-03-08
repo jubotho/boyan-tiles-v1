@@ -1,4 +1,4 @@
-import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT, HIT_WINDOW_ABOVE, HIT_WINDOW_BELOW, AUTO_MISS_THRESHOLD, PERFECT_THRESHOLD } from '../constants.js';
+import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT, HIT_WINDOW_BELOW, AUTO_MISS_THRESHOLD, PERFECT_THRESHOLD } from '../constants.js';
 import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, initAudio, createBGM, playAnnouncerCombo, playAnnouncerLevelUp } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
@@ -241,8 +241,8 @@ export default class GameScene extends Phaser.Scene {
             const timeDiff = elapsed - tile.targetTime;
             const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
 
-            // Tappable if tile center is within hit window
-            if (headY <= this.strikeLineY + HIT_WINDOW_BELOW && headY > this.strikeLineY - HIT_WINDOW_ABOVE) {
+            // Tappable if tile is on screen (above strike line + small below margin)
+            if (headY <= this.strikeLineY + HIT_WINDOW_BELOW && headY > 0) {
                 const distAbove = this.strikeLineY - headY;
                 this.processHit(tileObj, distAbove);
                 hitFound = true;
