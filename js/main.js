@@ -3,6 +3,7 @@ import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
+import LeaderboardScene from './scenes/LeaderboardScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -19,7 +20,7 @@ const config = {
     render: {
         antialias: true,
     },
-    scene: [BootScene, MenuScene, GameScene, GameOverScene],
+    scene: [BootScene, MenuScene, GameScene, GameOverScene, LeaderboardScene],
 };
 
 new Phaser.Game(config);

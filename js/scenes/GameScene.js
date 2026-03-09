@@ -466,6 +466,7 @@ export default class GameScene extends Phaser.Scene {
             difficulty: this.difficulty,
             reason,
             isNewRecord,
+            level: this.level,
         });
     }
 }

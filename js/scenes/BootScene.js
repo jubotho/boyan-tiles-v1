@@ -1,5 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, SONGS } from '../constants.js';
 import { preloadSFX, setSoundManager } from '../audio.js';
+import { initSupabase, ensureAuth } from '../supabase.js';
 
 export default class BootScene extends Phaser.Scene {
     constructor() {
@@ -50,6 +51,10 @@ export default class BootScene extends Phaser.Scene {
         this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20, 'THEGAMER', {
             fontSize: '18px', fill: '#ffaa00', fontStyle: 'bold',
         }).setOrigin(0.5);
+
+        // Initialize Supabase (non-blocking — game works without it)
+        initSupabase();
+        ensureAuth().catch(() => {});
 
         this.time.delayedCall(600, () => {
             this.scene.start('MenuScene');
