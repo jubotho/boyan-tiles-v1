@@ -3,7 +3,8 @@ import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
 import {
-    createGradientTile, createHitParticles, createFireExplosion, createNeonExplosion,
+    createGradientTile, createShieldOverlay, createShieldBreakEffect,
+    createHitParticles, createFireExplosion, createNeonExplosion,
     createFireTextures, updateComboFireAura, createMissFlash, createRipple,
     createAnimatedBackground, createComboMilestone, spawnRandomDramaticEvent,
     createFireTrail, updateComboBorderGlow, createNeonPulseWave,
@@ -188,6 +189,12 @@ export default class GameScene extends Phaser.Scene {
                     pulseRect.y = tile.centerY;
                 }
 
+                // Move shield overlay with tile
+                const shieldR = tileObj.getData('shieldContainer');
+                if (shieldR && !shieldR.destroyed) {
+                    shieldR.y = tile.centerY;
+                }
+
                 if (!tile.isHit) {
                     updateComboFireAura(this, tileObj, this.combo);
                     const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
@@ -207,10 +214,17 @@ export default class GameScene extends Phaser.Scene {
                 const newY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed - (h / 2);
 
                 tileObj.y = newY - tile.spawnY + (h / 2);
+                const screenY = tileObj.y + tile.spawnY;
 
                 const pulseRect = tileObj.getData('pulseRect');
                 if (pulseRect && !pulseRect.destroyed) {
-                    pulseRect.y = tileObj.y + tile.spawnY;
+                    pulseRect.y = screenY;
+                }
+
+                // Move shield overlay with tile
+                const shieldN = tileObj.getData('shieldContainer');
+                if (shieldN && !shieldN.destroyed) {
+                    shieldN.y = screenY;
                 }
 
                 if (!tile.isHit) {
@@ -241,13 +255,30 @@ export default class GameScene extends Phaser.Scene {
         const gfx = createGradientTile(this, x, spawnY, LANE_WIDTH - 6, h, lane);
         gfx.setDepth(5);
 
+        // Shield chance: 10% at level 1, +5% per level, capped at 35%
+        const shieldChance = Math.min(0.10 + (this.level - 1) * 0.05, 0.35);
+        const hasShield = Math.random() < shieldChance;
+
         gfx.setData('tileData', {
             lane,
             targetTime,
             isHit: false,
             height: h,
             spawnY,
+            hasShield,
         });
+
+        if (hasShield) {
+            createShieldOverlay(this, gfx, x, spawnY, LANE_WIDTH - 6, h);
+
+            // Extend destroy to also clean up shield container
+            const origDestroy = gfx.destroy.bind(gfx);
+            gfx.destroy = function () {
+                const sc = gfx.getData('shieldContainer');
+                if (sc && !sc.destroyed) sc.destroy();
+                origDestroy();
+            };
+        }
 
         this.tiles.add(gfx);
     }
@@ -315,6 +346,27 @@ export default class GameScene extends Phaser.Scene {
 
     processHit(tileObj, dist) {
         const tile = tileObj.getData('tileData');
+
+        // === SHIELD BREAK (first tap on shielded tile) ===
+        if (tile.hasShield) {
+            tile.hasShield = false;
+            const tileX = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+            const tileY = tile.isRewindTile ? tile.centerY : tileObj.y + tile.spawnY;
+
+            // Destroy shield overlay
+            const shieldContainer = tileObj.getData('shieldContainer');
+            if (shieldContainer && !shieldContainer.destroyed) {
+                shieldContainer.destroy();
+            }
+
+            // Epic shield break effect
+            createShieldBreakEffect(this, tileX, tileY, tile.lane);
+            playImpact();
+            this.showFeedback('SHIELD!', 0xaaddff);
+            return; // Don't destroy tile — needs second tap
+        }
+
+        // === NORMAL HIT (or second tap after shield break) ===
         tile.isHit = true;
 
         this.combo++;

@@ -119,6 +119,161 @@ export function createGradientTile(scene, x, y, width, height, lane) {
     return gfx;
 }
 
+// ========== Shield Overlay ==========
+
+export function createShieldOverlay(scene, tileGfx, x, y, width, height) {
+    const container = scene.add.container(x, y).setDepth(6);
+
+    // Hexagonal shield shape
+    const shield = scene.add.graphics();
+    const hw = width / 2 + 4;
+    const hh = height / 2 + 4;
+
+    // Outer glow
+    shield.fillStyle(0xaaddff, 0.08);
+    shield.fillRoundedRect(-hw - 4, -hh - 4, (hw + 4) * 2, (hh + 4) * 2, 12);
+
+    // Shield body — semi-transparent silver/blue
+    shield.fillStyle(0x88bbff, 0.15);
+    shield.fillRoundedRect(-hw, -hh, hw * 2, hh * 2, 10);
+
+    // Bright border
+    shield.lineStyle(3, 0xaaddff, 0.8);
+    shield.strokeRoundedRect(-hw, -hh, hw * 2, hh * 2, 10);
+
+    // Inner border
+    shield.lineStyle(1.5, 0xffffff, 0.3);
+    shield.strokeRoundedRect(-hw + 4, -hh + 4, (hw - 4) * 2, (hh - 4) * 2, 7);
+
+    // Diamond pattern (cross lines)
+    shield.lineStyle(1, 0xaaddff, 0.2);
+    shield.lineBetween(-hw + 10, 0, hw - 10, 0);
+    shield.lineBetween(0, -hh + 8, 0, hh - 8);
+    shield.lineBetween(-hw + 10, -hh / 2, hw - 10, hh / 2);
+    shield.lineBetween(-hw + 10, hh / 2, hw - 10, -hh / 2);
+
+    // Shield icon — small diamond in center
+    const iconSize = 10;
+    shield.fillStyle(0xffffff, 0.4);
+    shield.beginPath();
+    shield.moveTo(0, -iconSize);
+    shield.lineTo(iconSize, 0);
+    shield.lineTo(0, iconSize);
+    shield.lineTo(-iconSize, 0);
+    shield.closePath();
+    shield.fillPath();
+    shield.lineStyle(1.5, 0xaaddff, 0.8);
+    shield.strokePath();
+
+    // Corner accents
+    const ca = 6;
+    shield.fillStyle(0xaaddff, 0.7);
+    shield.fillCircle(-hw + 6, -hh + 6, ca / 2);
+    shield.fillCircle(hw - 6, -hh + 6, ca / 2);
+    shield.fillCircle(-hw + 6, hh - 6, ca / 2);
+    shield.fillCircle(hw - 6, hh - 6, ca / 2);
+
+    container.add(shield);
+
+    // Pulsing glow animation
+    scene.tweens.add({
+        targets: container,
+        alpha: 0.6,
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+    });
+
+    // Store ref for cleanup
+    tileGfx.setData('shieldContainer', container);
+
+    return container;
+}
+
+export function createShieldBreakEffect(scene, x, y, lane) {
+    const colors = LANE_COLORS[lane % 4];
+
+    // 1. Expanding ring
+    const ring = scene.add.image(x, y, 'neonRingParticle')
+        .setScale(0.3).setDepth(26).setAlpha(0.9)
+        .setBlendMode(Phaser.BlendModes.ADD).setTint(0xaaddff);
+    scene.tweens.add({
+        targets: ring,
+        scale: 2.5, alpha: 0,
+        duration: 400, ease: 'Power2',
+        onComplete: () => ring.destroy(),
+    });
+
+    // 2. Shield fragment particles flying outward
+    for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.3;
+        const speed = 80 + Math.random() * 120;
+        const frag = scene.add.graphics().setDepth(27);
+
+        // Draw a small shard shape
+        const size = 4 + Math.random() * 6;
+        frag.fillStyle(0xaaddff, 0.8);
+        frag.beginPath();
+        frag.moveTo(0, -size);
+        frag.lineTo(size * 0.5, 0);
+        frag.lineTo(0, size * 0.6);
+        frag.lineTo(-size * 0.5, 0);
+        frag.closePath();
+        frag.fillPath();
+        frag.lineStyle(1, 0xffffff, 0.5);
+        frag.strokePath();
+
+        frag.x = x;
+        frag.y = y;
+        frag.rotation = angle;
+
+        scene.tweens.add({
+            targets: frag,
+            x: x + Math.cos(angle) * speed,
+            y: y + Math.sin(angle) * speed,
+            alpha: 0,
+            rotation: angle + (Math.random() - 0.5) * 3,
+            duration: 350 + Math.random() * 200,
+            ease: 'Power2',
+            onComplete: () => frag.destroy(),
+        });
+    }
+
+    // 3. Bright flash
+    const flash = scene.add.circle(x, y, 40, 0xaaddff, 0.6)
+        .setDepth(25).setBlendMode(Phaser.BlendModes.ADD);
+    scene.tweens.add({
+        targets: flash,
+        scale: 2, alpha: 0,
+        duration: 250,
+        onComplete: () => flash.destroy(),
+    });
+
+    // 4. Spark particles
+    for (let i = 0; i < 8; i++) {
+        const spark = scene.add.image(
+            x + (Math.random() - 0.5) * 30,
+            y + (Math.random() - 0.5) * 30,
+            'sparkParticle'
+        ).setScale(0.4 + Math.random() * 0.4)
+         .setDepth(26).setBlendMode(Phaser.BlendModes.ADD)
+         .setTint(0xaaddff);
+
+        scene.tweens.add({
+            targets: spark,
+            x: spark.x + (Math.random() - 0.5) * 80,
+            y: spark.y + (Math.random() - 0.5) * 80,
+            alpha: 0, scale: 0.05,
+            duration: 300 + Math.random() * 200,
+            onComplete: () => spark.destroy(),
+        });
+    }
+
+    // 5. Camera shake
+    scene.cameras.main.shake(100, 0.004);
+}
+
 export function createFireTrail(scene, x, y, combo) {
     const intensity = Math.min(combo / 15, 1);
     if (Math.random() > 0.3 + intensity * 0.4) return;
