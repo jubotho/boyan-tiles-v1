@@ -47,7 +47,7 @@ export async function register(username, password) {
     return data;
 }
 
-export async function submitScore(songId, difficulty, score, maxCombo) {
+export async function submitScore(songId, difficulty, score, maxCombo, level) {
     const token = getToken();
     if (!token) return null;
     try {
@@ -57,7 +57,7 @@ export async function submitScore(songId, difficulty, score, maxCombo) {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ songId, difficulty, score, maxCombo }),
+            body: JSON.stringify({ songId, difficulty, score, maxCombo, level }),
         });
         const data = await res.json();
         if (!res.ok) {

@@ -138,9 +138,9 @@ export default class GameScene extends Phaser.Scene {
         updateBonusNames(this);
 
         if (this.isEndless) {
-            const level = Math.floor(realElapsed / 10000) + 5;
-            this.scrollSpeed = 180 + (level - 1) * 25;
-            this.endlessInterval = Math.max(250, 700 - (level - 1) * 50);
+            const level = Math.floor(realElapsed / 7000) + 5; // level up every 7s (was 10s)
+            this.scrollSpeed = 180 + (level - 1) * 40; // faster ramp (was 25)
+            this.endlessInterval = Math.max(200, 700 - (level - 1) * 60); // notes closer together
             this.diffLabel.setText('LVL ' + level);
 
             if (!rewindActive && realElapsed >= this.endlessNextTime) {
@@ -404,12 +404,15 @@ export default class GameScene extends Phaser.Scene {
 
     levelUp(elapsed) {
         this.level++;
-        // Speed up 15% each level
-        this.scrollSpeed = DIFFICULTY[this.difficulty].scrollSpeed * (1 + (this.level - 1) * 0.15);
+        // Speed up 30% each level (was 15% — much harder now)
+        this.scrollSpeed = DIFFICULTY[this.difficulty].scrollSpeed * (1 + (this.level - 1) * 0.30);
 
-        // Calculate offset: last note time + 2s gap
-        const lastNote = this.beatmap[this.beatmap.length - 1];
-        this.beatmapTimeOffset = elapsed + 1500; // 1.5s gap before next loop starts
+        // Music plays faster each level (12% per level, capped at 2x)
+        const musicRate = Math.min(1 + (this.level - 1) * 0.12, 2.0);
+        this.bgm.setRate(musicRate);
+
+        // Calculate offset: last note time + 1.5s gap
+        this.beatmapTimeOffset = elapsed + 1500;
         this.nextNoteIndex = 0;
 
         // Update UI
@@ -462,6 +465,7 @@ export default class GameScene extends Phaser.Scene {
         this.scene.start('GameOverScene', {
             score: Math.floor(this.score),
             maxCombo: this.maxCombo,
+            level: this.level,
             songId: this.songId,
             difficulty: this.difficulty,
             reason,

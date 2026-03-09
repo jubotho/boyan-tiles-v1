@@ -23,6 +23,17 @@ module.exports = async (req, res) => {
             }
         }
 
+        // Fetch level details for each entry
+        for (const entry of entries) {
+            const detail = await redis('GET', `best:${songId}:${difficulty}:${entry.username}`);
+            if (detail) {
+                const parsed = JSON.parse(detail);
+                entry.level = parsed.level || 1;
+            } else {
+                entry.level = 1;
+            }
+        }
+
         res.status(200).json({ entries });
     } catch (e) {
         console.error('Leaderboard error:', e);

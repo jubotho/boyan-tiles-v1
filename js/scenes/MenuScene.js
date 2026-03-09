@@ -9,11 +9,8 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        this.selectedSong = 0;
-        this.selectedDifficulty = 'medium';
-
-        // Auth status (top right)
-        this.createAuthUI();
+        // Re-enter callback: restart scene on login/logout
+        setAuthChangeCallback(() => this.scene.restart());
 
         // Title
         this.add.text(GAME_WIDTH / 2, 40, 'BOYAN', {
@@ -23,6 +20,55 @@ export default class MenuScene extends Phaser.Scene {
             fontSize: '16px', fill: '#ffaa00', fontStyle: 'bold',
         }).setOrigin(0.5);
 
+        if (!isLoggedIn()) {
+            this.createLoginRequired();
+            return;
+        }
+
+        this.selectedSong = 0;
+        this.selectedDifficulty = 'medium';
+
+        // Auth status (top right)
+        this.createAuthUI();
+        this.createGameMenu();
+    }
+
+    createLoginRequired() {
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'LOGIN TO PLAY!', {
+            fontSize: '24px', fill: '#ff4444', fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        const loginBtn = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 220, 55, 0xff6600)
+            .setInteractive({ useHandCursor: true });
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 'LOGIN / REGISTER', {
+            fontSize: '20px', fill: '#fff', fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        loginBtn.on('pointerover', () => loginBtn.setFillStyle(0xff8800));
+        loginBtn.on('pointerout', () => loginBtn.setFillStyle(0xff6600));
+        loginBtn.on('pointerdown', () => {
+            initAudio();
+            playMenuClick();
+            showAuthModal();
+        });
+    }
+
+    createAuthUI() {
+        this.add.text(GAME_WIDTH - 10, 10, getUsername(), {
+            fontSize: '12px', fill: '#ff6600', fontStyle: 'bold',
+        }).setOrigin(1, 0);
+
+        const logoutBtn = this.add.text(GAME_WIDTH - 10, 25, 'Logout', {
+            fontSize: '10px', fill: '#888',
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+        logoutBtn.on('pointerdown', () => {
+            playMenuClick();
+            logout();
+            this.scene.restart();
+        });
+    }
+
+    createGameMenu() {
         // Song selection
         this.add.text(GAME_WIDTH / 2, 105, 'SELECT SONG', {
             fontSize: '14px', fill: '#666', fontStyle: 'bold',
@@ -129,36 +175,7 @@ export default class MenuScene extends Phaser.Scene {
             fontSize: '10px', fill: '#444',
         }).setOrigin(0.5);
 
-        // Re-enter callback: restart scene on login/logout
-        setAuthChangeCallback(() => this.scene.restart());
-
         this.updateSelection();
-    }
-
-    createAuthUI() {
-        if (isLoggedIn()) {
-            this.add.text(GAME_WIDTH - 10, 10, getUsername(), {
-                fontSize: '12px', fill: '#ff6600', fontStyle: 'bold',
-            }).setOrigin(1, 0);
-
-            const logoutBtn = this.add.text(GAME_WIDTH - 10, 25, 'Logout', {
-                fontSize: '10px', fill: '#888',
-            }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-            logoutBtn.on('pointerdown', () => {
-                playMenuClick();
-                logout();
-                this.scene.restart();
-            });
-        } else {
-            const loginBtn = this.add.text(GAME_WIDTH - 10, 12, 'LOGIN', {
-                fontSize: '13px', fill: '#ff6600', fontStyle: 'bold',
-            }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-            loginBtn.on('pointerdown', () => {
-                initAudio();
-                playMenuClick();
-                showAuthModal();
-            });
-        }
     }
 
     updateSelection() {
@@ -197,7 +214,8 @@ export default class MenuScene extends Phaser.Scene {
             entries.slice(0, 3).forEach((entry, i) => {
                 if (this.lbTexts[i]) {
                     const isMe = entry.username === me;
-                    this.lbTexts[i].setText(`${i + 1}. ${entry.username} — ${entry.score}`);
+                    const lvl = entry.level > 1 ? ` (Lv${entry.level})` : '';
+                    this.lbTexts[i].setText(`${i + 1}. ${entry.username} — ${entry.score}${lvl}`);
                     this.lbTexts[i].setFill(isMe ? '#ff6600' : '#666');
                 }
             });

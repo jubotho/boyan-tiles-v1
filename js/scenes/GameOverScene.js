@@ -11,6 +11,7 @@ export default class GameOverScene extends Phaser.Scene {
     init(data) {
         this.finalScore = data.score;
         this.maxCombo = data.maxCombo;
+        this.level = data.level || 1;
         this.songId = data.songId;
         this.difficulty = data.difficulty;
         this.reason = data.reason;
@@ -24,41 +25,41 @@ export default class GameOverScene extends Phaser.Scene {
         // Title
         const isWin = this.reason === 'SONG COMPLETE!';
         const titleColor = isWin ? '#00ff88' : '#ff4444';
-        this.add.text(GAME_WIDTH / 2, 80, isWin ? 'SONG COMPLETE!' : 'GAME OVER', {
+        this.add.text(GAME_WIDTH / 2, 70, isWin ? 'SONG COMPLETE!' : 'GAME OVER', {
             fontSize: '36px', fill: titleColor, fontStyle: 'bold',
         }).setOrigin(0.5);
 
         if (!isWin) {
-            this.add.text(GAME_WIDTH / 2, 115, this.reason, {
+            this.add.text(GAME_WIDTH / 2, 105, this.reason, {
                 fontSize: '16px', fill: '#aaa',
             }).setOrigin(0.5);
         }
 
         // Song info
         const song = SONGS.find(s => s.id === this.songId);
-        this.add.text(GAME_WIDTH / 2, 145, `${song.title} - ${DIFFICULTY[this.difficulty].label}`, {
+        this.add.text(GAME_WIDTH / 2, 135, `${song.title} - ${DIFFICULTY[this.difficulty].label}`, {
             fontSize: '14px', fill: '#888',
         }).setOrigin(0.5);
 
         // Score
-        this.add.text(GAME_WIDTH / 2, 195, String(this.finalScore), {
+        this.add.text(GAME_WIDTH / 2, 180, String(this.finalScore), {
             fontSize: '64px', fill: '#fff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        this.add.text(GAME_WIDTH / 2, 235, 'SCORE', {
+        this.add.text(GAME_WIDTH / 2, 220, 'SCORE', {
             fontSize: '14px', fill: '#666',
         }).setOrigin(0.5);
 
-        // Max combo
-        this.add.text(GAME_WIDTH / 2, 268, `Max Combo: ${this.maxCombo}`, {
-            fontSize: '18px', fill: '#00aaff',
+        // Level + Max combo
+        this.add.text(GAME_WIDTH / 2, 250, `Level ${this.level}  |  Max Combo: ${this.maxCombo}`, {
+            fontSize: '16px', fill: '#00aaff',
         }).setOrigin(0.5);
 
         // New record
         if (this.isNewRecord) {
             playFanfare();
             playAnnouncerNewRecord();
-            const recordText = this.add.text(GAME_WIDTH / 2, 300, 'NEW HIGH SCORE!', {
+            const recordText = this.add.text(GAME_WIDTH / 2, 282, 'NEW HIGH SCORE!', {
                 fontSize: '22px', fill: '#ffaa00', fontStyle: 'bold',
             }).setOrigin(0.5);
 
@@ -72,18 +73,18 @@ export default class GameOverScene extends Phaser.Scene {
             });
         } else {
             const best = getHighScore(this.songId, this.difficulty);
-            this.add.text(GAME_WIDTH / 2, 300, `Best: ${best}`, {
+            this.add.text(GAME_WIDTH / 2, 282, `Best: ${best}`, {
                 fontSize: '16px', fill: '#666',
             }).setOrigin(0.5);
         }
 
-        // Online rank
+        // Online rank + submit
         this.createOnlineSection();
 
         // Play again button
-        const playAgainBtn = this.add.rectangle(GAME_WIDTH / 2, 420, 200, 50, 0x00aaff)
+        const playAgainBtn = this.add.rectangle(GAME_WIDTH / 2, 390, 200, 50, 0x00aaff)
             .setInteractive({ useHandCursor: true });
-        this.add.text(GAME_WIDTH / 2, 420, 'PLAY AGAIN', {
+        this.add.text(GAME_WIDTH / 2, 390, 'PLAY AGAIN', {
             fontSize: '20px', fill: '#fff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
@@ -98,9 +99,9 @@ export default class GameOverScene extends Phaser.Scene {
         });
 
         // Menu button
-        const menuBtn = this.add.rectangle(GAME_WIDTH / 2, 485, 200, 50, 0x444466)
+        const menuBtn = this.add.rectangle(GAME_WIDTH / 2, 455, 200, 50, 0x444466)
             .setInteractive({ useHandCursor: true });
-        this.add.text(GAME_WIDTH / 2, 485, 'MENU', {
+        this.add.text(GAME_WIDTH / 2, 455, 'MENU', {
             fontSize: '20px', fill: '#fff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
@@ -113,31 +114,25 @@ export default class GameOverScene extends Phaser.Scene {
     }
 
     createOnlineSection() {
-        if (isLoggedIn()) {
-            const rankText = this.add.text(GAME_WIDTH / 2, 335, 'Submitting...', {
-                fontSize: '14px', fill: '#ff6600',
-            }).setOrigin(0.5);
+        const rankText = this.add.text(GAME_WIDTH / 2, 315, 'Submitting...', {
+            fontSize: '14px', fill: '#ff6600',
+        }).setOrigin(0.5);
 
-            submitScore(this.songId, this.difficulty, this.finalScore, this.maxCombo)
-                .then(result => {
-                    if (!this.scene || !this.scene.isActive) return;
-                    if (result) {
-                        rankText.setText(`Online Rank: #${result.rank}`);
-                    } else {
-                        rankText.setText('');
-                    }
-                })
-                .catch(() => {
-                    if (this.scene && this.scene.isActive) rankText.setText('');
-                });
-        } else {
-            this.add.text(GAME_WIDTH / 2, 335, 'Login to save scores online', {
-                fontSize: '12px', fill: '#555',
-            }).setOrigin(0.5);
-        }
+        submitScore(this.songId, this.difficulty, this.finalScore, this.maxCombo, this.level)
+            .then(result => {
+                if (!this.scene || !this.scene.isActive) return;
+                if (result) {
+                    rankText.setText(`Online Rank: #${result.rank}`);
+                } else {
+                    rankText.setText('');
+                }
+            })
+            .catch(() => {
+                if (this.scene && this.scene.isActive) rankText.setText('');
+            });
 
         // Leaderboard top 5
-        this.add.text(GAME_WIDTH / 2, 540, 'LEADERBOARD', {
+        this.add.text(GAME_WIDTH / 2, 500, 'LEADERBOARD', {
             fontSize: '11px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 
@@ -146,8 +141,9 @@ export default class GameOverScene extends Phaser.Scene {
             const me = getUsername();
             entries.slice(0, 5).forEach((entry, i) => {
                 const isMe = entry.username === me;
-                this.add.text(GAME_WIDTH / 2, 557 + i * 15, `${i + 1}. ${entry.username} — ${entry.score}`, {
-                    fontSize: '11px',
+                const lvl = entry.level > 1 ? ` Lv${entry.level}` : '';
+                this.add.text(GAME_WIDTH / 2, 517 + i * 16, `${i + 1}. ${entry.username} — ${entry.score}${lvl}`, {
+                    fontSize: '12px',
                     fill: isMe ? '#ff6600' : '#888',
                     fontStyle: isMe ? 'bold' : 'normal',
                 }).setOrigin(0.5);

@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Not authenticated' });
         }
 
-        const { songId, difficulty, score, maxCombo } = req.body || {};
+        const { songId, difficulty, score, maxCombo, level } = req.body || {};
         if (!songId || !difficulty || score === undefined) {
             return res.status(400).json({ error: 'Missing fields' });
         }
@@ -30,6 +30,7 @@ module.exports = async (req, res) => {
             await redis('SET', detailKey, JSON.stringify({
                 score: numScore,
                 maxCombo: maxCombo || 0,
+                level: level || 1,
                 date: Date.now(),
             }));
         }
