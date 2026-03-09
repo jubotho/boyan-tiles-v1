@@ -8,20 +8,21 @@ A "Magic Tiles 3"-style rhythm game for **Boyan THEGAMER**, built with **Phaser 
 
 ## Development
 
-No build system, package manager, or tests. Serve with any static file server (e.g., `python3 -m http.server`). Uses ES modules (`type="module"`).
+No build system or tests. `package.json` exists only for the `redis` dependency (used by API serverless functions). Static files use ES modules (`type="module"`). Serve locally with `python3 -m http.server` (API routes only work on Vercel).
 
 ## Architecture
 
 Multi-file structure using ES modules. Phaser is loaded as a global from CDN; all game code imports from local modules.
 
 ```
-index.html                      - HTML shell, loads Phaser CDN + tsparticles CDN + js/main.js
-css/style.css                   - Dark theme styles, game wrapper positioning
-js/main.js                      - Entry point, Phaser config, scene registration, tsparticles fire bg
+index.html                      - HTML shell, loads Phaser CDN + tsparticles CDN + js/main.js + auth modal
+css/style.css                   - Dark theme styles, game wrapper positioning, auth modal styles
+js/main.js                      - Entry point, Phaser config, scene registration, tsparticles fire bg, auth init
 js/constants.js                 - Game dimensions, lanes, difficulty configs, song list (with file refs)
 js/audio.js                     - SFX via Phaser audio (WAV files) + BGM via MP3 files. Procedural fallback.
+js/auth.js                      - Client-side auth state, API calls (login/register/submitScore/fetchLeaderboard)
 js/beatmaps.js                  - 9 beatmaps (3 songs x 3 difficulties), generated via helper
-js/highscore.js                 - localStorage high score persistence
+js/highscore.js                 - localStorage high score persistence (local fallback)
 js/effects/index.js             - Barrel re-export for all effects (single import point)
 js/effects/textures.js          - Procedural canvas textures (fire, spark, smoke, neon, ring) + LANE_COLORS
 js/effects/explosions.js        - Fire + neon hit explosions, hit particles
@@ -33,11 +34,19 @@ js/effects/lavaExplosions.js    - Color-matched lava tile explosions (hit + miss
 js/effects/background.js        - Lava zone, strike line, lane dividers, ambient particles
 js/managers/BonusNameManager.js - Bonus name spawning, animation, tap handling, cleanup
 js/scenes/BootScene.js          - Splash screen + audio preloader with loading bar
-js/scenes/MenuScene.js          - Song + difficulty selection, high score display
+js/scenes/MenuScene.js          - Song + difficulty selection, high score, login/logout, online leaderboard
 js/scenes/GameScene.js          - Core gameplay loop, input, scoring, level progression
-js/scenes/GameOverScene.js      - Results, new record fanfare, play again / menu
+js/scenes/GameOverScene.js      - Results, new record fanfare, score submission, leaderboard, play again / menu
+api/_lib/kv.js                  - Redis client wrapper (node-redis, sendCommand interface)
+api/_lib/auth.js                - Server-side auth: password hashing (PBKDF2), sessions, user CRUD
+api/register.js                 - POST /api/register — create account (username + password)
+api/login.js                    - POST /api/login — verify password, return session token
+api/submit-score.js             - POST /api/submit-score — save score to leaderboard (auth required)
+api/leaderboard.js              - GET /api/leaderboard?songId=...&difficulty=... — top 10 scores
+api/admin/reset-password.js     - POST /api/admin/reset-password — admin-only password reset
 audio/sfx/                      - 38 WAV sound effects: 24 retro SFX (CC0 Juhani Junkala) + 14 announcer voices (CC0 Kenney)
 audio/music/                    - 3 MP3 music tracks (electronic/techno, CC0)
+package.json                    - Minimal: only `redis` dependency (for API serverless functions)
 ```
 
 ### Key Design Decisions
@@ -58,6 +67,21 @@ audio/music/                    - 3 MP3 music tracks (electronic/techno, CC0)
 - **Announcer voices**: Kenney CC0 voice clips at combo milestones (10/25/50/100), level ups, new high scores.
 - **Bonus names**: "Светльо", "Боян", "Пешко", "Цвети", "Дари" spawn every 8-15s with siren, spinning/bouncing animation, tap for bonus points.
 - **Retina/HiDPI**: `resolution: window.devicePixelRatio` in Phaser config for sharp rendering.
+
+### Auth & Online Leaderboard
+
+- **Simple custom auth** — no SSO, no emails, no auth libraries. Just username + password for 3 kids.
+- **Backend**: Vercel serverless functions in `/api/` (Node.js, CommonJS). Each `.js` file = one endpoint.
+- **Database**: Redis Cloud (Redis Labs), connected via `REDIS_URL` env var. Uses `redis` npm package with `sendCommand()` for raw Redis commands.
+- **Password hashing**: `crypto.pbkdf2Sync` (100k iterations, SHA-512, 64-byte key). No external crypto libs.
+- **Sessions**: random 32-byte token stored in Redis with 30-day TTL. Client stores token in `localStorage`. Sent as `Authorization: Bearer <token>` header.
+- **Leaderboard**: Redis Sorted Sets (`ZADD ... GT` to only keep highest score). `ZREVRANGE` for top 10.
+- **Admin password reset**: `POST /api/admin/reset-password` protected by `ADMIN_SECRET` env var. Dad calls it via curl, tells kid the new password.
+- **Vercel env vars required**: `REDIS_URL` (Redis Cloud connection string), `ADMIN_SECRET` (any secret string for admin endpoint).
+- **Client-side auth module** (`js/auth.js`): manages localStorage tokens, API calls, auth modal (HTML overlay in `index.html`). Scenes import from this module.
+- **Graceful degradation**: if API is unavailable (e.g., local dev), game still works — just no online features. `submitScore`/`fetchLeaderboard` silently return null/empty.
+- **Redis key schema**: `user:{username}` (JSON hash+salt), `session:{token}` (username string, 30d TTL), `lb:{songId}:{difficulty}` (sorted set), `best:{songId}:{difficulty}:{username}` (JSON details).
+- **`api/_lib/`** directory (underscore prefix) is NOT served as routes — just shared helpers.
 
 ## Code Quality Rules
 
