@@ -23,8 +23,21 @@ const config = {
     scene: [BootScene, MenuScene, GameScene, GameOverScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
 initAuthModal();
+
+// Fix blurry text on HiDPI/Retina displays (Phaser 3.60 resolution bug)
+const dpr = window.devicePixelRatio || 1;
+if (dpr > 1) {
+    const origTextFactory = Phaser.GameObjects.GameObjectFactory.prototype.text;
+    Phaser.GameObjects.GameObjectFactory.prototype.text = function (x, y, text, style) {
+        style = style || {};
+        if (!style.resolution) {
+            style.resolution = dpr;
+        }
+        return origTextFactory.call(this, x, y, text, style);
+    };
+}
 
 // Initialize tsparticles fire background
 async function initFireBackground() {
