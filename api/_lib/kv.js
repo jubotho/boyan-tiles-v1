@@ -1,18 +1,20 @@
-const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const { createClient } = require('redis');
 
+let client = null;
+
+async function getClient() {
+    if (!client || !client.isOpen) {
+        client = createClient({ url: process.env.REDIS_URL });
+        client.on('error', (err) => console.error('Redis error:', err));
+        await client.connect();
+    }
+    return client;
+}
+
+// Raw Redis command interface — keeps all other files unchanged
 async function redis(...args) {
-    const res = await fetch(KV_URL, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${KV_TOKEN}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(args),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data.result;
+    const c = await getClient();
+    return c.sendCommand(args.map(String));
 }
 
 module.exports = { redis };
