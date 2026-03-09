@@ -38,3 +38,97 @@ body {
 canvas {
     display: block;
 }
+
+/* Auth Modal */
+#auth-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.auth-box {
+    background: #1a1a2e;
+    border: 2px solid #ff6600;
+    border-radius: 12px;
+    padding: 30px;
+    width: 280px;
+    text-align: center;
+    position: relative;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.auth-box h2 {
+    color: #ff6600;
+    margin: 0 0 20px 0;
+    font-size: 24px;
+}
+
+.auth-box input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: #0a0a12;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.auth-box input:focus {
+    outline: none;
+    border-color: #ff6600;
+}
+
+#auth-submit {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background: #ff6600;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#auth-submit:hover { background: #ff8800; }
+#auth-submit:disabled { background: #666; cursor: not-allowed; }
+
+#auth-toggle {
+    display: block;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 13px;
+    margin: 12px auto 0;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#auth-toggle:hover { color: #fff; }
+
+#auth-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+#auth-close:hover { color: #fff; }
+
+#auth-error {
+    color: #ff4444;
+    font-size: 13px;
+    margin: 8px 0 0 0;
+    min-height: 18px;
+}

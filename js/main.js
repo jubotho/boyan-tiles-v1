@@ -1,9 +1,9 @@
 import { GAME_WIDTH, GAME_HEIGHT } from './constants.js';
+import { initAuthModal } from './auth.js';
 import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
-import LeaderboardScene from './scenes/LeaderboardScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -20,10 +20,11 @@ const config = {
     render: {
         antialias: true,
     },
-    scene: [BootScene, MenuScene, GameScene, GameOverScene, LeaderboardScene],
+    scene: [BootScene, MenuScene, GameScene, GameOverScene],
 };
 
 new Phaser.Game(config);
+initAuthModal();
 
 // Initialize tsparticles fire background
 async function initFireBackground() {

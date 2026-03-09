@@ -1,7 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, SONGS, DIFFICULTY } from '../constants.js';
 import { getHighScore } from '../highscore.js';
 import { playMenuClick, playMenuStart, initAudio } from '../audio.js';
-import { getStoredUsername, saveUsername, isOnline } from '../supabase.js';
+import { isLoggedIn, getUsername, logout, showAuthModal, setAuthChangeCallback, fetchLeaderboard } from '../auth.js';
 
 export default class MenuScene extends Phaser.Scene {
     constructor() {
@@ -12,54 +12,28 @@ export default class MenuScene extends Phaser.Scene {
         this.selectedSong = 0;
         this.selectedDifficulty = 'medium';
 
-        // Prompt for username on first visit
-        if (!getStoredUsername()) {
-            const name = prompt('Choose your player name:');
-            if (name && name.trim()) {
-                saveUsername(name.trim().slice(0, 12));
-            } else {
-                saveUsername('Player');
-            }
-        }
+        // Auth status (top right)
+        this.createAuthUI();
 
         // Title
-        this.add.text(GAME_WIDTH / 2, 30, 'BOYAN', {
-            fontSize: '32px', fill: '#ff6600', fontStyle: 'bold',
+        this.add.text(GAME_WIDTH / 2, 40, 'BOYAN', {
+            fontSize: '36px', fill: '#ff6600', fontStyle: 'bold',
         }).setOrigin(0.5);
-        this.add.text(GAME_WIDTH / 2, 58, 'THEGAMER', {
-            fontSize: '14px', fill: '#ffaa00', fontStyle: 'bold',
+        this.add.text(GAME_WIDTH / 2, 72, 'THEGAMER', {
+            fontSize: '16px', fill: '#ffaa00', fontStyle: 'bold',
         }).setOrigin(0.5);
-
-        // Username display (tap to change)
-        const username = getStoredUsername() || 'Player';
-        this.usernameText = this.add.text(GAME_WIDTH / 2, 82, username, {
-            fontSize: '13px', fill: '#00aaff', fontStyle: 'bold',
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-        this.add.text(GAME_WIDTH / 2, 95, 'tap to change name', {
-            fontSize: '8px', fill: '#444',
-        }).setOrigin(0.5);
-
-        this.usernameText.on('pointerdown', () => {
-            const newName = prompt('Enter new name:', getStoredUsername());
-            if (newName && newName.trim()) {
-                const trimmed = newName.trim().slice(0, 12);
-                saveUsername(trimmed);
-                this.usernameText.setText(trimmed);
-            }
-        });
 
         // Song selection
-        this.add.text(GAME_WIDTH / 2, 110, 'SELECT SONG', {
+        this.add.text(GAME_WIDTH / 2, 105, 'SELECT SONG', {
             fontSize: '14px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         this.songCards = [];
         SONGS.forEach((song, i) => {
-            const y = 138 + i * 42;
+            const y = 135 + i * 45;
             const card = this.add.container(GAME_WIDTH / 2, y);
 
-            const bg = this.add.rectangle(0, 0, 300, 35, 0x1a1a2e)
+            const bg = this.add.rectangle(0, 0, 300, 38, 0x1a1a2e)
                 .setStrokeStyle(2, 0x333355)
                 .setInteractive({ useHandCursor: true });
 
@@ -84,7 +58,7 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         // Difficulty selection
-        const diffY = 138 + SONGS.length * 42 + 18;
+        const diffY = 135 + SONGS.length * 45 + 25;
         this.add.text(GAME_WIDTH / 2, diffY, 'DIFFICULTY', {
             fontSize: '14px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
@@ -119,8 +93,17 @@ export default class MenuScene extends Phaser.Scene {
             fontSize: '14px', fill: '#888',
         }).setOrigin(0.5);
 
+        // Online leaderboard top 3 (below high score)
+        this.lbTexts = [];
+        for (let i = 0; i < 3; i++) {
+            const t = this.add.text(GAME_WIDTH / 2, diffY + 93 + i * 14, '', {
+                fontSize: '11px', fill: '#666',
+            }).setOrigin(0.5);
+            this.lbTexts.push(t);
+        }
+
         // Play button
-        const playBtnY = diffY + 115;
+        const playBtnY = diffY + 145;
         const playBtn = this.add.rectangle(GAME_WIDTH / 2, playBtnY, 200, 55, 0xff6600)
             .setInteractive({ useHandCursor: true });
 
@@ -141,40 +124,41 @@ export default class MenuScene extends Phaser.Scene {
             });
         });
 
-        // Leaderboard button
-        const lbBtnY = playBtnY + 65;
-        const lbBtn = this.add.rectangle(GAME_WIDTH / 2, lbBtnY, 200, 42, 0x1a1a2e)
-            .setStrokeStyle(2, 0xff6600)
-            .setInteractive({ useHandCursor: true });
-        this.add.text(GAME_WIDTH / 2, lbBtnY, 'LEADERBOARD', {
-            fontSize: '16px', fill: '#ff6600', fontStyle: 'bold',
-        }).setOrigin(0.5);
-
-        lbBtn.on('pointerover', () => lbBtn.setFillStyle(0x2a1a0a));
-        lbBtn.on('pointerout', () => lbBtn.setFillStyle(0x1a1a2e));
-        lbBtn.on('pointerdown', () => {
-            playMenuClick();
-            const song = SONGS[this.selectedSong];
-            this.scene.start('LeaderboardScene', {
-                songId: song.id,
-                difficulty: this.selectedDifficulty,
-                fromScene: 'MenuScene',
-            });
-        });
-
-        // Online status
-        const statusText = isOnline() ? 'Online' : 'Offline';
-        const statusColor = isOnline() ? '#00aa44' : '#664400';
-        this.add.text(GAME_WIDTH / 2, lbBtnY + 30, statusText, {
-            fontSize: '9px', fill: statusColor,
-        }).setOrigin(0.5);
-
         // Footer
-        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 12, 'Boyan THEGAMER rocks!', {
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 20, 'Boyan THEGAMER rocks!', {
             fontSize: '10px', fill: '#444',
         }).setOrigin(0.5);
 
+        // Re-enter callback: restart scene on login/logout
+        setAuthChangeCallback(() => this.scene.restart());
+
         this.updateSelection();
+    }
+
+    createAuthUI() {
+        if (isLoggedIn()) {
+            this.add.text(GAME_WIDTH - 10, 10, getUsername(), {
+                fontSize: '12px', fill: '#ff6600', fontStyle: 'bold',
+            }).setOrigin(1, 0);
+
+            const logoutBtn = this.add.text(GAME_WIDTH - 10, 25, 'Logout', {
+                fontSize: '10px', fill: '#888',
+            }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+            logoutBtn.on('pointerdown', () => {
+                playMenuClick();
+                logout();
+                this.scene.restart();
+            });
+        } else {
+            const loginBtn = this.add.text(GAME_WIDTH - 10, 12, 'LOGIN', {
+                fontSize: '13px', fill: '#ff6600', fontStyle: 'bold',
+            }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+            loginBtn.on('pointerdown', () => {
+                initAudio();
+                playMenuClick();
+                showAuthModal();
+            });
+        }
     }
 
     updateSelection() {
@@ -204,5 +188,19 @@ export default class MenuScene extends Phaser.Scene {
         const song = SONGS[this.selectedSong];
         const hs = getHighScore(song.id, this.selectedDifficulty);
         this.highScoreText.setText(hs > 0 ? `Best: ${hs}` : 'No high score yet');
+
+        // Fetch online leaderboard
+        this.lbTexts.forEach(t => t.setText(''));
+        fetchLeaderboard(song.id, this.selectedDifficulty).then(entries => {
+            if (!this.scene || !this.scene.isActive) return;
+            const me = getUsername();
+            entries.slice(0, 3).forEach((entry, i) => {
+                if (this.lbTexts[i]) {
+                    const isMe = entry.username === me;
+                    this.lbTexts[i].setText(`${i + 1}. ${entry.username} — ${entry.score}`);
+                    this.lbTexts[i].setFill(isMe ? '#ff6600' : '#666');
+                }
+            });
+        }).catch(() => {});
     }
 }
