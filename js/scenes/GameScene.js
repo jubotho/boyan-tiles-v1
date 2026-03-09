@@ -255,8 +255,8 @@ export default class GameScene extends Phaser.Scene {
         const gfx = createGradientTile(this, x, spawnY, LANE_WIDTH - 6, h, lane);
         gfx.setDepth(5);
 
-        // Shield chance: 10% at level 1, +5% per level, capped at 35%
-        const shieldChance = Math.min(0.10 + (this.level - 1) * 0.05, 0.35);
+        // Shield chance: 5% at level 1, +3% per level, capped at 20%
+        const shieldChance = Math.min(0.05 + (this.level - 1) * 0.03, 0.20);
         const hasShield = Math.random() < shieldChance;
 
         gfx.setData('tileData', {

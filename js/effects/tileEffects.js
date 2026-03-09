@@ -123,71 +123,87 @@ export function createGradientTile(scene, x, y, width, height, lane) {
 
 export function createShieldOverlay(scene, tileGfx, x, y, width, height) {
     const container = scene.add.container(x, y).setDepth(6);
+    const hw = width / 2 + 8;
+    const hh = height / 2 + 8;
 
-    // Hexagonal shield shape
     const shield = scene.add.graphics();
-    const hw = width / 2 + 4;
-    const hh = height / 2 + 4;
 
-    // Outer glow
-    shield.fillStyle(0xaaddff, 0.08);
-    shield.fillRoundedRect(-hw - 4, -hh - 4, (hw + 4) * 2, (hh + 4) * 2, 12);
+    // === BIG BRIGHT OUTER GLOW — unmissable ===
+    shield.fillStyle(0x44aaff, 0.12);
+    shield.fillRoundedRect(-hw - 8, -hh - 8, (hw + 8) * 2, (hh + 8) * 2, 16);
+    shield.fillStyle(0x66ccff, 0.15);
+    shield.fillRoundedRect(-hw - 4, -hh - 4, (hw + 4) * 2, (hh + 4) * 2, 14);
 
-    // Shield body — semi-transparent silver/blue
-    shield.fillStyle(0x88bbff, 0.15);
-    shield.fillRoundedRect(-hw, -hh, hw * 2, hh * 2, 10);
+    // === THICK bright shield border ===
+    shield.lineStyle(4, 0x66ccff, 0.9);
+    shield.strokeRoundedRect(-hw, -hh, hw * 2, hh * 2, 12);
+    shield.lineStyle(2, 0xffffff, 0.5);
+    shield.strokeRoundedRect(-hw + 3, -hh + 3, (hw - 3) * 2, (hh - 3) * 2, 9);
 
-    // Bright border
-    shield.lineStyle(3, 0xaaddff, 0.8);
-    shield.strokeRoundedRect(-hw, -hh, hw * 2, hh * 2, 10);
+    // === Horizontal bars across the shield ===
+    shield.fillStyle(0x66ccff, 0.12);
+    for (let i = -2; i <= 2; i++) {
+        shield.fillRect(-hw + 8, i * 18 - 2, (hw - 8) * 2, 4);
+    }
 
-    // Inner border
-    shield.lineStyle(1.5, 0xffffff, 0.3);
-    shield.strokeRoundedRect(-hw + 4, -hh + 4, (hw - 4) * 2, (hh - 4) * 2, 7);
-
-    // Diamond pattern (cross lines)
-    shield.lineStyle(1, 0xaaddff, 0.2);
-    shield.lineBetween(-hw + 10, 0, hw - 10, 0);
-    shield.lineBetween(0, -hh + 8, 0, hh - 8);
-    shield.lineBetween(-hw + 10, -hh / 2, hw - 10, hh / 2);
-    shield.lineBetween(-hw + 10, hh / 2, hw - 10, -hh / 2);
-
-    // Shield icon — small diamond in center
-    const iconSize = 10;
-    shield.fillStyle(0xffffff, 0.4);
+    // === BIG center shield icon ===
+    const iconSize = 18;
+    shield.fillStyle(0xffffff, 0.5);
     shield.beginPath();
     shield.moveTo(0, -iconSize);
-    shield.lineTo(iconSize, 0);
+    shield.lineTo(iconSize * 0.8, -iconSize * 0.3);
+    shield.lineTo(iconSize * 0.8, iconSize * 0.3);
     shield.lineTo(0, iconSize);
-    shield.lineTo(-iconSize, 0);
+    shield.lineTo(-iconSize * 0.8, iconSize * 0.3);
+    shield.lineTo(-iconSize * 0.8, -iconSize * 0.3);
     shield.closePath();
     shield.fillPath();
-    shield.lineStyle(1.5, 0xaaddff, 0.8);
+    shield.lineStyle(2.5, 0x66ccff, 1);
     shield.strokePath();
 
-    // Corner accents
-    const ca = 6;
-    shield.fillStyle(0xaaddff, 0.7);
-    shield.fillCircle(-hw + 6, -hh + 6, ca / 2);
-    shield.fillCircle(hw - 6, -hh + 6, ca / 2);
-    shield.fillCircle(-hw + 6, hh - 6, ca / 2);
-    shield.fillCircle(hw - 6, hh - 6, ca / 2);
+    // Inner shield cross
+    shield.lineStyle(2, 0x66ccff, 0.6);
+    shield.lineBetween(0, -iconSize + 4, 0, iconSize - 4);
+    shield.lineBetween(-iconSize * 0.6, 0, iconSize * 0.6, 0);
 
     container.add(shield);
 
-    // Pulsing glow animation
+    // === "2x" text label so player knows it needs two taps ===
+    const label = scene.add.text(0, -hh - 10, '2x', {
+        fontSize: '14px', fill: '#66ccff', fontStyle: 'bold',
+        stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5);
+    container.add(label);
+
+    // === Strong pulse animation — alternates bright/dim ===
     scene.tweens.add({
         targets: container,
-        alpha: 0.6,
-        duration: 600,
+        alpha: 0.5,
+        duration: 400,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
     });
 
-    // Store ref for cleanup
-    tileGfx.setData('shieldContainer', container);
+    // === Orbiting spark particles ===
+    for (let i = 0; i < 2; i++) {
+        const orb = scene.add.circle(0, 0, 3, 0x66ccff, 0.9).setDepth(7)
+            .setBlendMode(Phaser.BlendModes.ADD);
+        container.add(orb);
+        const startAngle = i * Math.PI;
+        scene.tweens.addCounter({
+            from: 0, to: 360,
+            duration: 1200,
+            repeat: -1,
+            onUpdate: (tween) => {
+                const angle = startAngle + Phaser.Math.DegToRad(tween.getValue());
+                orb.x = Math.cos(angle) * (hw + 4);
+                orb.y = Math.sin(angle) * (hh + 4);
+            },
+        });
+    }
 
+    tileGfx.setData('shieldContainer', container);
     return container;
 }
 
