@@ -10,7 +10,6 @@ import {
     createFireTrail, updateComboBorderGlow, createNeonPulseWave,
     createLavaTileExplosion, createLavaMissExplosion,
 } from '../effects/index.js';
-import { spawnBonusName, updateBonusNames, cleanupBonusNames } from '../managers/BonusNameManager.js';
 import { RewindManager, REWIND_SPEED_FACTOR } from '../managers/RewindManager.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -32,8 +31,6 @@ export default class GameScene extends Phaser.Scene {
         this.gameStarted = false;
         this.nextNoteIndex = 0;
         this.startTime = 0;
-        this.bonusNames = [];
-        this.nextBonusTime = 5000 + Math.random() * 5000;
         this.isEndless = this.difficulty === 'endless';
         this.endlessNextTime = 1500;
         this.endlessInterval = 700; // ms between notes, decreases over time
@@ -131,12 +128,6 @@ export default class GameScene extends Phaser.Scene {
         // Combo border glow
         updateComboBorderGlow(this, this.combo);
 
-        // Bonus names (skip spawning during rewind)
-        if (!rewindActive && realElapsed >= this.nextBonusTime) {
-            spawnBonusName(this);
-            this.nextBonusTime = realElapsed + 8000 + Math.random() * 7000;
-        }
-        updateBonusNames(this);
 
         if (this.isEndless) {
             const level = Math.floor(realElapsed / 7000) + 5; // level up every 7s (was 10s)
@@ -511,7 +502,6 @@ export default class GameScene extends Phaser.Scene {
         this.isGameOver = true;
         this.bgm.stop();
         if (this.rewindManager) this.rewindManager.cleanup();
-        cleanupBonusNames(this.bonusNames);
 
         const isNewRecord = setHighScore(this.songId, this.difficulty, this.score);
 
