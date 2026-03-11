@@ -2,12 +2,12 @@
 
 import { GAME_WIDTH, GAME_HEIGHT, STRIKE_LINE_Y } from '../constants.js';
 import { playSiren } from '../audio.js';
+import { getUsername } from '../auth.js';
 
-const BONUS_NAMES = ['BOYAN', 'THEGAMER', 'BOYAN THEGAMER'];
 const BONUS_COLORS = [0xff0000, 0xff6600, 0xffcc00, 0x00ff66, 0xff00ff, 0x00ccff];
 
 export function spawnBonusName(scene) {
-    const name = BONUS_NAMES[Math.floor(Math.random() * BONUS_NAMES.length)];
+    const name = getUsername() || 'PLAYER';
 
     // Siren when bonus appears!
     playSiren();
