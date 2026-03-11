@@ -10,6 +10,7 @@ export const MAX_ERRORS = 10;
 export const HIT_WINDOW_BELOW = 70;
 export const AUTO_MISS_THRESHOLD = 90;
 export const PERFECT_THRESHOLD = 40;
+export const SHIELD_MAX_SPEED = 220;
 
 export const DIFFICULTY = {
     easy:     { scrollSpeed: 180, label: 'Easy',     color: 0x44cc44 },

@@ -1,4 +1,4 @@
-import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT, HIT_WINDOW_BELOW, AUTO_MISS_THRESHOLD, PERFECT_THRESHOLD } from '../constants.js';
+import { LANES, LANE_WIDTH, STRIKE_LINE_Y, TILE_HEIGHT, MAX_ERRORS, DIFFICULTY, SONGS, GAME_WIDTH, GAME_HEIGHT, HIT_WINDOW_BELOW, AUTO_MISS_THRESHOLD, PERFECT_THRESHOLD, SHIELD_MAX_SPEED } from '../constants.js';
 import { playHit, playHitPerfect, playMiss, playExplosion, playCombo, playImpact, initAudio, createBGM, playAnnouncerCombo, playAnnouncerLevelUp } from '../audio.js';
 import { BEATMAPS } from '../beatmaps.js';
 import { setHighScore } from '../highscore.js';
@@ -174,7 +174,7 @@ export default class GameScene extends Phaser.Scene {
             }
         }
 
-        // Move tiles
+        // Move tiles & check collisions
         this.tiles.getChildren().forEach(tileObj => {
             const tile = tileObj.getData('tileData');
             if (!tile) return;
@@ -208,10 +208,12 @@ export default class GameScene extends Phaser.Scene {
                     tileObj.destroy();
                 }
             } else {
-                // Normal tile: time-based positioning
+                // Normal tile: time-based positioning (per-tile speed for shielded)
                 const timeDiff = elapsed - tile.targetTime;
                 const h = tile.height;
-                const newY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed - (h / 2);
+                const tileSpeed = tile.speed || this.scrollSpeed;
+                const yOff = tile.yOffset || 0;
+                const newY = this.strikeLineY + (timeDiff / 1000) * tileSpeed + yOff - (h / 2);
 
                 tileObj.y = newY - tile.spawnY + (h / 2);
                 const screenY = tileObj.y + tile.spawnY;
@@ -234,7 +236,7 @@ export default class GameScene extends Phaser.Scene {
                 }
 
                 if (!tile.isHit && !rewindActive) {
-                    const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
+                    const headY = this.strikeLineY + (timeDiff / 1000) * tileSpeed + yOff;
                     if (headY > this.strikeLineY + AUTO_MISS_THRESHOLD) {
                         tile.isHit = true;
                         const tx = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
@@ -245,6 +247,9 @@ export default class GameScene extends Phaser.Scene {
                 }
             }
         });
+
+        // Tile-on-tile collisions: normal tiles destroy shielded tile's shield
+        if (!rewindActive) this.checkTileCollisions();
     }
 
     spawnTile(lane, targetTime) {
@@ -266,6 +271,8 @@ export default class GameScene extends Phaser.Scene {
             height: h,
             spawnY,
             hasShield,
+            speed: hasShield ? Math.min(this.scrollSpeed, SHIELD_MAX_SPEED) : null,
+            yOffset: 0,
         });
 
         if (hasShield) {
@@ -331,7 +338,9 @@ export default class GameScene extends Phaser.Scene {
                 }
             } else {
                 const timeDiff = elapsed - tile.targetTime;
-                const headY = this.strikeLineY + (timeDiff / 1000) * this.scrollSpeed;
+                const tileSpeed = tile.speed || this.scrollSpeed;
+                const yOff = tile.yOffset || 0;
+                const headY = this.strikeLineY + (timeDiff / 1000) * tileSpeed + yOff;
 
                 if (headY <= this.strikeLineY + HIT_WINDOW_BELOW && headY > 0) {
                     const distAbove = this.strikeLineY - headY;
@@ -349,19 +358,7 @@ export default class GameScene extends Phaser.Scene {
 
         // === SHIELD BREAK (first tap on shielded tile) ===
         if (tile.hasShield) {
-            tile.hasShield = false;
-            const tileX = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
-            const tileY = tile.isRewindTile ? tile.centerY : tileObj.y + tile.spawnY;
-
-            // Destroy shield overlay
-            const shieldContainer = tileObj.getData('shieldContainer');
-            if (shieldContainer && !shieldContainer.destroyed) {
-                shieldContainer.destroy();
-            }
-
-            // Epic shield break effect
-            createShieldBreakEffect(this, tileX, tileY, tile.lane);
-            playImpact();
+            this.breakShield(tileObj, tile);
             this.showFeedback('SHIELD!', 0xaaddff);
             return; // Don't destroy tile — needs second tap
         }
@@ -523,5 +520,65 @@ export default class GameScene extends Phaser.Scene {
             reason,
             isNewRecord,
         });
+    }
+
+    breakShield(tileObj, tile) {
+        tile.hasShield = false;
+
+        // Speed boost: maintain current position, then accelerate
+        const elapsed = this.gameTime;
+        const timeDiff = elapsed - tile.targetTime;
+        const oldSpeed = tile.speed || this.scrollSpeed;
+        const oldOff = tile.yOffset || 0;
+        const currentY = this.strikeLineY + (timeDiff / 1000) * oldSpeed + oldOff;
+        const newSpeed = this.scrollSpeed * 1.3;
+        tile.yOffset = currentY - (this.strikeLineY + (timeDiff / 1000) * newSpeed);
+        tile.speed = newSpeed;
+
+        // Destroy shield visual
+        const shieldContainer = tileObj.getData('shieldContainer');
+        if (shieldContainer && !shieldContainer.destroyed) {
+            shieldContainer.destroy();
+        }
+
+        const tileX = tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+        const tileY = tile.isRewindTile ? tile.centerY : tileObj.y + tile.spawnY;
+        createShieldBreakEffect(this, tileX, tileY, tile.lane);
+        playImpact();
+    }
+
+    checkTileCollisions() {
+        const children = this.tiles.getChildren();
+        const byLane = [[], [], [], []];
+
+        children.forEach(tileObj => {
+            const tile = tileObj.getData('tileData');
+            if (!tile || tile.isHit || tile.isRewindTile) return;
+            const screenY = tileObj.y + tile.spawnY;
+            byLane[tile.lane].push({ tileObj, tile, screenY });
+        });
+
+        for (let lane = 0; lane < 4; lane++) {
+            const laneTiles = byLane[lane];
+            if (laneTiles.length < 2) continue;
+
+            const shielded = laneTiles.filter(t => t.tile.hasShield);
+            if (shielded.length === 0) continue;
+
+            for (const sh of shielded) {
+                for (const ot of laneTiles) {
+                    if (ot === sh || ot.tile.hasShield || ot.tile.isHit) continue;
+                    if (Math.abs(sh.screenY - ot.screenY) < TILE_HEIGHT * 0.8) {
+                        // Collision: destroy normal tile, break shield
+                        ot.tile.isHit = true;
+                        const tx = ot.tile.lane * LANE_WIDTH + LANE_WIDTH / 2;
+                        createLavaTileExplosion(this, tx, ot.screenY, ot.tile.lane, false);
+                        ot.tileObj.destroy();
+                        this.breakShield(sh.tileObj, sh.tile);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
