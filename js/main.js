@@ -5,11 +5,6 @@ import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 
-// Calculate render resolution so canvas matches actual screen pixels
-const dpr = window.devicePixelRatio || 1;
-const fitScale = Math.min(window.innerWidth / GAME_WIDTH, window.innerHeight / GAME_HEIGHT);
-const renderRes = Math.min(Math.ceil(fitScale * dpr), 3);
-
 const config = {
     type: Phaser.AUTO,
     parent: 'game-container',
@@ -17,7 +12,7 @@ const config = {
     height: GAME_HEIGHT,
     backgroundColor: '#0a0a12',
     transparent: false,
-    resolution: renderRes,
+    resolution: window.devicePixelRatio || 1,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -31,15 +26,18 @@ const config = {
 const game = new Phaser.Game(config);
 initAuthModal();
 
-// Ensure all text objects render at full resolution
-const origTextFactory = Phaser.GameObjects.GameObjectFactory.prototype.text;
-Phaser.GameObjects.GameObjectFactory.prototype.text = function (x, y, text, style) {
-    style = style || {};
-    if (!style.resolution) {
-        style.resolution = renderRes;
-    }
-    return origTextFactory.call(this, x, y, text, style);
-};
+// Fix blurry text on HiDPI/Retina displays (Phaser 3.60 resolution bug)
+const dpr = window.devicePixelRatio || 1;
+if (dpr > 1) {
+    const origTextFactory = Phaser.GameObjects.GameObjectFactory.prototype.text;
+    Phaser.GameObjects.GameObjectFactory.prototype.text = function (x, y, text, style) {
+        style = style || {};
+        if (!style.resolution) {
+            style.resolution = dpr;
+        }
+        return origTextFactory.call(this, x, y, text, style);
+    };
+}
 
 // Initialize tsparticles fire background
 async function initFireBackground() {
