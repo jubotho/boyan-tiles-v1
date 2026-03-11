@@ -1,9 +1,9 @@
 // ========== Bonus Name Spawning & Lifecycle ==========
 
-import { GAME_WIDTH, STRIKE_LINE_Y } from '../constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, STRIKE_LINE_Y } from '../constants.js';
 import { playSiren } from '../audio.js';
 
-const BONUS_NAMES = ['Светльо', 'Боян', 'Пешко', 'Цвети', 'Дари'];
+const BONUS_NAMES = ['BOYAN', 'THEGAMER', 'BOYAN THEGAMER'];
 const BONUS_COLORS = [0xff0000, 0xff6600, 0xffcc00, 0x00ff66, 0xff00ff, 0x00ccff];
 
 export function spawnBonusName(scene) {
@@ -12,8 +12,37 @@ export function spawnBonusName(scene) {
     // Siren when bonus appears!
     playSiren();
 
-    const x = 60 + Math.random() * (GAME_WIDTH - 120);
-    const y = 80 + Math.random() * (STRIKE_LINE_Y - 160);
+    // Spawn from a random edge
+    const edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+    let x, y, vx, vy;
+    const speed = 120 + Math.random() * 100; // pixels per second
+
+    switch (edge) {
+        case 0: // from top
+            x = 60 + Math.random() * (GAME_WIDTH - 120);
+            y = -30;
+            vx = (Math.random() - 0.5) * speed;
+            vy = speed * (0.6 + Math.random() * 0.4);
+            break;
+        case 1: // from right
+            x = GAME_WIDTH + 30;
+            y = 80 + Math.random() * (STRIKE_LINE_Y - 160);
+            vx = -speed * (0.6 + Math.random() * 0.4);
+            vy = (Math.random() - 0.5) * speed * 0.5;
+            break;
+        case 2: // from bottom
+            x = 60 + Math.random() * (GAME_WIDTH - 120);
+            y = STRIKE_LINE_Y + 30;
+            vx = (Math.random() - 0.5) * speed;
+            vy = -speed * (0.6 + Math.random() * 0.4);
+            break;
+        case 3: // from left
+            x = -30;
+            y = 80 + Math.random() * (STRIKE_LINE_Y - 160);
+            vx = speed * (0.6 + Math.random() * 0.4);
+            vy = (Math.random() - 0.5) * speed * 0.5;
+            break;
+    }
 
     const container = scene.add.container(x, y).setDepth(20);
 
@@ -23,7 +52,7 @@ export function spawnBonusName(scene) {
 
     // The name text
     const txt = scene.add.text(0, 0, name, {
-        fontSize: '28px',
+        fontSize: name.length > 8 ? '20px' : '28px',
         fill: '#fff',
         fontStyle: 'bold',
         stroke: '#000',
@@ -32,27 +61,15 @@ export function spawnBonusName(scene) {
     container.add(txt);
 
     // Make it interactive
-    const hitZone = scene.add.circle(0, 0, 50, 0xffffff, 0.001).setInteractive();
+    const hitZone = scene.add.circle(0, 0, 55, 0xffffff, 0.001).setInteractive();
     container.add(hitZone);
 
     // Spinning rotation
     scene.tweens.add({
         targets: container,
-        angle: { from: -15, to: 15 },
-        duration: 300,
-        yoyo: true,
+        angle: 360,
+        duration: 1500 + Math.random() * 1000,
         repeat: -1,
-        ease: 'Sine.easeInOut',
-    });
-
-    // Bouncing up and down
-    scene.tweens.add({
-        targets: container,
-        y: y - 25,
-        duration: 400,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
     });
 
     // Scale pulse
@@ -85,6 +102,8 @@ export function spawnBonusName(scene) {
         txt,
         glow,
         flashTimer,
+        vx,
+        vy,
         age: 0,
         spawnTime: scene.time.now - scene.startTime,
         destroyed: false,
@@ -123,13 +142,13 @@ export function spawnBonusName(scene) {
         // Explosion particles
         for (let i = 0; i < 20; i++) {
             const angle = (Math.PI * 2 * i) / 20;
-            const speed = 60 + Math.random() * 80;
+            const pSpeed = 60 + Math.random() * 80;
             const c = BONUS_COLORS[Math.floor(Math.random() * BONUS_COLORS.length)];
             const p = scene.add.circle(container.x, container.y, 3 + Math.random() * 4, c, 0.9).setDepth(25);
             scene.tweens.add({
                 targets: p,
-                x: container.x + Math.cos(angle) * speed,
-                y: container.y + Math.sin(angle) * speed,
+                x: container.x + Math.cos(angle) * pSpeed,
+                y: container.y + Math.sin(angle) * pSpeed,
                 alpha: 0,
                 duration: 500 + Math.random() * 300,
                 onComplete: () => p.destroy(),
@@ -144,11 +163,20 @@ export function spawnBonusName(scene) {
 }
 
 export function updateBonusNames(scene) {
+    const dt = 1 / 60; // approximate frame time
     scene.bonusNames = scene.bonusNames.filter(b => {
         if (b.destroyed) return false;
         b.age += 1;
-        // Remove after ~4 seconds (240 frames at 60fps)
-        if (b.age > 240) {
+
+        // Move the container
+        b.container.x += b.vx * dt;
+        b.container.y += b.vy * dt;
+
+        // Remove when fully off-screen or after ~6 seconds
+        const x = b.container.x;
+        const y = b.container.y;
+        const offScreen = x < -80 || x > GAME_WIDTH + 80 || y < -80 || y > GAME_HEIGHT + 80;
+        if (offScreen || b.age > 360) {
             b.flashTimer.destroy();
             b.container.destroy();
             return false;
