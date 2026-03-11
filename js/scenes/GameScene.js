@@ -11,6 +11,7 @@ import {
     createLavaTileExplosion, createLavaMissExplosion,
 } from '../effects/index.js';
 import { RewindManager, REWIND_SPEED_FACTOR } from '../managers/RewindManager.js';
+import { RivalLineManager } from '../managers/RivalLineManager.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -92,6 +93,7 @@ export default class GameScene extends Phaser.Scene {
         startGroup.add([overlay, songTitle, startBtn]);
 
         this.rewindManager = new RewindManager(this);
+        this.rivalLineManager = new RivalLineManager(this, this.songId, this.difficulty);
 
         startBtn.on('pointerdown', () => {
             initAudio();
@@ -128,6 +130,8 @@ export default class GameScene extends Phaser.Scene {
         // Combo border glow
         updateComboBorderGlow(this, this.combo);
 
+        // Rival score tracking
+        this.rivalLineManager.update(this.score);
 
         if (this.isEndless) {
             const level = Math.floor(realElapsed / 7000) + 5; // level up every 7s (was 10s)
@@ -502,6 +506,7 @@ export default class GameScene extends Phaser.Scene {
         this.isGameOver = true;
         this.bgm.stop();
         if (this.rewindManager) this.rewindManager.cleanup();
+        if (this.rivalLineManager) this.rivalLineManager.cleanup();
 
         const isNewRecord = setHighScore(this.songId, this.difficulty, this.score);
 
