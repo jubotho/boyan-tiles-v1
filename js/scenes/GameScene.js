@@ -264,6 +264,10 @@ export default class GameScene extends Phaser.Scene {
         const shieldChance = Math.min(0.05 + (this.level - 1) * 0.03, 0.20);
         const hasShield = Math.random() < shieldChance;
 
+        const shieldSpeed = hasShield ? Math.min(this.scrollSpeed, SHIELD_MAX_SPEED) : null;
+        // Offset so slower shielded tiles still appear at the top edge
+        const yOffset = shieldSpeed ? STRIKE_LINE_Y * (shieldSpeed / this.scrollSpeed - 1) : 0;
+
         gfx.setData('tileData', {
             lane,
             targetTime,
@@ -271,8 +275,8 @@ export default class GameScene extends Phaser.Scene {
             height: h,
             spawnY,
             hasShield,
-            speed: hasShield ? Math.min(this.scrollSpeed, SHIELD_MAX_SPEED) : null,
-            yOffset: 0,
+            speed: shieldSpeed,
+            yOffset,
         });
 
         if (hasShield) {
