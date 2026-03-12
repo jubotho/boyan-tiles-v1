@@ -136,7 +136,7 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         // Play button (right after difficulty)
-        const playBtnY = diffY + 68;
+        const playBtnY = diffY + 78;
         const playBtn = this.add.rectangle(GAME_WIDTH / 2, playBtnY, 200, 50, 0xff6600)
             .setInteractive({ useHandCursor: true });
 
