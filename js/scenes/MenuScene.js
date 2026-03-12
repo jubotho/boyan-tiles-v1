@@ -105,7 +105,7 @@ export default class MenuScene extends Phaser.Scene {
 
         // Difficulty selection
         const diffY = 135 + SONGS.length * 45 + 25;
-        this.add.text(GAME_WIDTH / 2, diffY, 'DIFFICULTY', {
+        this.add.text(GAME_WIDTH / 2, diffY, 'ENDLESS MODE', {
             fontSize: '14px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 

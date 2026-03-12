@@ -13,10 +13,10 @@ export const PERFECT_THRESHOLD = 40;
 export const SHIELD_MAX_SPEED = 220;
 
 export const DIFFICULTY = {
-    easy:     { scrollSpeed: 180, label: 'Easy Endless',     color: 0x44cc44 },
-    medium:   { scrollSpeed: 300, label: 'Medium Endless',   color: 0xffaa00 },
-    hard:     { scrollSpeed: 420, label: 'Hard Endless',     color: 0xff4444 },
-    endless:  { scrollSpeed: 180, label: 'Mega Endless',     color: 0xaa00ff },
+    easy:     { scrollSpeed: 180, label: 'Easy',   color: 0x44cc44 },
+    medium:   { scrollSpeed: 300, label: 'Medium', color: 0xffaa00 },
+    hard:     { scrollSpeed: 420, label: 'Hard',   color: 0xff4444 },
+    endless:  { scrollSpeed: 180, label: 'MEGA',   color: 0xaa00ff },
 };
 
 export const SONGS = [
