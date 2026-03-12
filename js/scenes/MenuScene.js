@@ -70,24 +70,25 @@ export default class MenuScene extends Phaser.Scene {
 
     createGameMenu() {
         // Song selection
-        this.add.text(GAME_WIDTH / 2, 105, 'SELECT SONG', {
-            fontSize: '14px', fill: '#666', fontStyle: 'bold',
+        this.add.text(GAME_WIDTH / 2, 100, 'SELECT SONG', {
+            fontSize: '13px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         this.songCards = [];
+        const songSpacing = 36;
         SONGS.forEach((song, i) => {
-            const y = 135 + i * 45;
+            const y = 126 + i * songSpacing;
             const card = this.add.container(GAME_WIDTH / 2, y);
 
-            const bg = this.add.rectangle(0, 0, 300, 38, 0x1a1a2e)
+            const bg = this.add.rectangle(0, 0, 300, 30, 0x1a1a2e)
                 .setStrokeStyle(2, 0x333355)
                 .setInteractive({ useHandCursor: true });
 
-            const title = this.add.text(-130, -8, song.title, {
-                fontSize: '14px', fill: '#ddd', fontStyle: 'bold',
+            const title = this.add.text(-130, -7, song.title, {
+                fontSize: '13px', fill: '#ddd', fontStyle: 'bold',
             });
-            const artist = this.add.text(-130, 8, song.artist, {
-                fontSize: '10px', fill: '#777',
+            const artist = this.add.text(-130, 7, song.artist, {
+                fontSize: '9px', fill: '#777',
             });
 
             card.add([bg, title, artist]);
@@ -104,19 +105,19 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         // Difficulty selection
-        const diffY = 135 + SONGS.length * 45 + 25;
+        const diffY = 126 + SONGS.length * songSpacing + 16;
         this.add.text(GAME_WIDTH / 2, diffY, 'ENDLESS MODE', {
-            fontSize: '14px', fill: '#666', fontStyle: 'bold',
+            fontSize: '13px', fill: '#666', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         this.diffButtons = {};
         const diffs = Object.keys(DIFFICULTY);
         diffs.forEach((diff, i) => {
             const x = 45 + i * 90;
-            const y = diffY + 35;
+            const y = diffY + 28;
             const cfg = DIFFICULTY[diff];
 
-            const bg = this.add.rectangle(x, y, 78, 36, 0x1a1a2e)
+            const bg = this.add.rectangle(x, y, 78, 32, 0x1a1a2e)
                 .setStrokeStyle(2, 0x333355)
                 .setInteractive({ useHandCursor: true });
 
@@ -134,23 +135,9 @@ export default class MenuScene extends Phaser.Scene {
             this.diffButtons[diff] = { bg, label, color: cfg.color };
         });
 
-        // High score display
-        this.highScoreText = this.add.text(GAME_WIDTH / 2, diffY + 75, '', {
-            fontSize: '14px', fill: '#888',
-        }).setOrigin(0.5);
-
-        // Online leaderboard top 3 (below high score)
-        this.lbTexts = [];
-        for (let i = 0; i < 3; i++) {
-            const t = this.add.text(GAME_WIDTH / 2, diffY + 93 + i * 14, '', {
-                fontSize: '11px', fill: '#666',
-            }).setOrigin(0.5);
-            this.lbTexts.push(t);
-        }
-
-        // Play button
-        const playBtnY = diffY + 145;
-        const playBtn = this.add.rectangle(GAME_WIDTH / 2, playBtnY, 200, 55, 0xff6600)
+        // Play button (right after difficulty)
+        const playBtnY = diffY + 68;
+        const playBtn = this.add.rectangle(GAME_WIDTH / 2, playBtnY, 200, 50, 0xff6600)
             .setInteractive({ useHandCursor: true });
 
         this.add.text(GAME_WIDTH / 2, playBtnY, 'PLAY', {
@@ -170,8 +157,22 @@ export default class MenuScene extends Phaser.Scene {
             });
         });
 
+        // High score + leaderboard (below play button)
+        this.highScoreText = this.add.text(GAME_WIDTH / 2, playBtnY + 40, '', {
+            fontSize: '13px', fill: '#888',
+        }).setOrigin(0.5);
+
+        // Online leaderboard top 5
+        this.lbTexts = [];
+        for (let i = 0; i < 5; i++) {
+            const t = this.add.text(GAME_WIDTH / 2, playBtnY + 57 + i * 15, '', {
+                fontSize: '11px', fill: '#666',
+            }).setOrigin(0.5);
+            this.lbTexts.push(t);
+        }
+
         // Footer
-        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 20, 'Boyan THEGAMER rocks!', {
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 10, 'Boyan THEGAMER rocks!', {
             fontSize: '10px', fill: '#444',
         }).setOrigin(0.5);
 
@@ -211,7 +212,7 @@ export default class MenuScene extends Phaser.Scene {
         fetchLeaderboard(song.id, this.selectedDifficulty).then(entries => {
             if (!this.scene || !this.scene.isActive) return;
             const me = getUsername();
-            entries.slice(0, 3).forEach((entry, i) => {
+            entries.slice(0, 5).forEach((entry, i) => {
                 if (this.lbTexts[i]) {
                     const isMe = entry.username === me;
                     const lvl = entry.level > 1 ? ` (Lv${entry.level})` : '';
