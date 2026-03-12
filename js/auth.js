@@ -84,6 +84,7 @@ export async function fetchLeaderboard(songId, difficulty) {
 // --- Auth Modal ---
 
 let onAuthChange = null;
+let resetToLogin = null;
 
 export function setAuthChangeCallback(cb) {
     onAuthChange = cb;
@@ -112,6 +113,9 @@ export function initAuthModal() {
             : 'Have an account? Login';
         errorEl.textContent = '';
     }
+
+    // Expose reset so showAuthModal can sync the internal flag
+    resetToLogin = () => setMode(true);
 
     toggleBtn.onclick = () => setMode(!isLoginMode);
     closeBtn.onclick = () => { modal.style.display = 'none'; };
@@ -147,11 +151,8 @@ export function showAuthModal() {
     const modal = document.getElementById('auth-modal');
     if (!modal) return;
     modal.style.display = 'flex';
-    // Reset to login mode
-    document.getElementById('auth-title').textContent = 'LOGIN';
-    document.getElementById('auth-submit').textContent = 'LOGIN';
-    document.getElementById('auth-toggle').textContent = 'Need an account? Register';
-    document.getElementById('auth-error').textContent = '';
+    // Reset both visuals AND the internal isLoginMode flag
+    if (resetToLogin) resetToLogin();
     document.getElementById('auth-username').value = '';
     document.getElementById('auth-password').value = '';
     setTimeout(() => document.getElementById('auth-username').focus(), 100);
